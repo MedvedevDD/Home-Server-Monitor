@@ -1,0 +1,6 @@
+{
+  "serial_number": "INV-001",
+  "smart_support": {"available": true, "enabled": true},
+  "smart_status": {"passed": true},
+  "ata_smart_attributes": {"table": [{"id": 5, "raw": {"value": 0}}]}
+}

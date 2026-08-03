@@ -1,0 +1,4 @@
+{
+  "smartctl": {"messages": [{"string": "SMART support is unavailable"}]},
+  "smart_support": {"available": false}
+}

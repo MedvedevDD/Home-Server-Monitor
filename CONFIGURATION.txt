@@ -1,0 +1,151 @@
+Home Server Monitor configuration
+
+Configuration is read from /etc/default/home-server-monitor. Values already present in the process environment take priority. Boolean values accept true, false, 1, 0, yes, no, on, and off.
+
+## Storage and SMART
+
+### HSM_STORAGE_HIDE_USB_FLASH
+Default: true
+
+Hides devices classified as USB flash drives. Classification uses stable lsblk metadata such as TRAN=usb, RM, ROTA, model, and vendor; it never relies on /dev/sdX names. External USB HDD and USB SSD devices remain monitored.
+
+### HSM_STORAGE_EXCLUDE_SERIALS
+Default: empty
+
+Comma-separated exact serial numbers to exclude from Storage collection. Matching is case-insensitive. Example:
+
+ini
+HSM_STORAGE_EXCLUDE_SERIALS=ABC123,DEF456
+
+
+### HSM_STORAGE_EXCLUDE_MODELS
+Default: empty
+
+Comma-separated model substrings to exclude. Matching is case-insensitive. Example:
+
+ini
+HSM_STORAGE_EXCLUDE_MODELS=USB FLASH DRIVE,DataTraveler
+
+
+### HSM_SMART_USE_SUDO
+Default: false
+
+Runs smartctl through sudo. Enable only when the telegraf user has an appropriate passwordless sudo rule.
+
+### HSM_SMARTCTL_BINARY
+Default: smartctl
+
+Path or command name used to start smartctl.
+
+### HSM_CACHE_FILE
+Default: /var/cache/home-server-monitor/storage_inventory.json
+
+Storage inventory cache path.
+
+## MegaRAID and StorCLI
+
+### HSM_RAID_ENABLED
+Default: true
+
+Enables RAID metric collection.
+
+### HSM_RAID_REQUIRED
+Default: false
+
+Makes collector execution fail when RAID collection fails.
+
+### HSM_RAID_STORCLI_ENABLED
+Default: true
+
+Enables the MegaRAID StorCLI provider.
+
+### HSM_STORCLI_USE_SUDO
+Default: false
+
+Runs StorCLI through sudo.
+
+### HSM_STORCLI_BINARY
+Default: storcli
+
+Path or command name used to start StorCLI.
+
+### HSM_MEGARAID_CONTROL_DEVICE
+Default: empty
+
+Fallback smartctl control device for a single MegaRAID controller, for example /dev/sda.
+
+### HSM_MEGARAID_CONTROL_DEVICES
+Default: empty
+
+Per-controller mappings for multiple MegaRAID controllers. Example:
+
+ini
+HSM_MEGARAID_CONTROL_DEVICES=0=/dev/sda,1=/dev/sdb
+
+
+### HSM_RAID_TWCLI_ENABLED
+Default: true
+
+Enables the 3ware tw_cli provider.
+
+### HSM_TWCLI_BINARY
+Default: tw_cli
+
+Path or command name used to start tw_cli.
+
+### HSM_TWCLI_USE_SUDO
+Default: false
+
+Runs tw_cli through sudo.
+
+## UPS
+
+### HSM_UPS_ENABLED
+Default: true
+
+Enables NUT UPS collection.
+
+### HSM_UPS_REQUIRED
+Default: false
+
+Makes collector execution fail when UPS collection fails.
+
+### HSM_UPS_NAME
+Default: ippon
+
+NUT UPS identifier passed to upsc.
+
+### HSM_UPSC_BINARY
+Default: upsc
+
+Path or command name used to start upsc.
+
+### HSM_UPS_BATTERY_EMPTY_VOLTAGE
+Default: 42.0
+
+Battery-pack voltage treated as 0% when charge must be estimated.
+
+### HSM_UPS_BATTERY_FULL_VOLTAGE
+Default: 54.4
+
+Battery-pack voltage treated as 100% when charge must be estimated.
+
+## Grafana
+
+### HSM_GRAFANA_DATASOURCE_UID
+Default: automatically detected
+
+Forces a specific Grafana InfluxDB datasource UID during install or update.
+
+## Advanced
+
+### HSM_ENV_FILE
+Default: /etc/default/home-server-monitor
+
+Overrides the environment-file path. This variable normally needs to be supplied in the process environment because it selects the file that is loaded.
+
+Proxmox host collector:
+HSM_PROXMOX_ENABLED=true
+HSM_PROXMOX_REQUIRED=false
+HSM_PVEVERSION_BINARY=pveversion
+HSM_PROXMOX_CPU_SAMPLE_SECONDS=0.10

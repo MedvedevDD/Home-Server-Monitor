@@ -1,0 +1,4 @@
+{
+  "smart_support": {"available": true},
+  "ata_smart_attributes": {"table": [{"id": 194, "raw": {"string": "37 (Min/Max 19/52)"}}]}
+}

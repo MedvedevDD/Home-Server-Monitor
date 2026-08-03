@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Python syntax
+        run: python3 -m py_compile collector.py hsm.py config.py metric.py
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Shell syntax
+        run: |
+          sh -n install.sh
+          sh -n update.sh
+      - name: Release validation
+        run: python3 tools/validate_release.py .

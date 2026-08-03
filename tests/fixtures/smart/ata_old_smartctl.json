@@ -1,0 +1,10 @@
+{
+  "smart_support": {"available": true},
+  "smart_status": {"passed": true},
+  "ata_smart_attributes": {
+    "table": [
+      {"id": 194, "raw": {"string": "34"}},
+      {"id": 5, "raw": {"string": "0"}}
+    ]
+  }
+}

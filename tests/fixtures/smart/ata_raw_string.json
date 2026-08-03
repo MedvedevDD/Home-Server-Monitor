@@ -1,0 +1,11 @@
+{
+  "smart_support": {"available": true},
+  "ata_smart_attributes": {
+    "table": [
+      {"id": "5", "raw": {"string": "12 sectors"}},
+      {"id": 197, "raw": {"string": "7 (Min/Max 0/7)"}},
+      {"id": 198, "raw": {"string": "not available"}},
+      {"id": 199, "raw": {"string": "-3"}}
+    ]
+  }
+}

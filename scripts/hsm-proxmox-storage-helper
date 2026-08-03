@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+if [ "$#" -ne 0 ]; then
+    echo "This helper does not accept arguments." >&2
+    exit 64
+fi
+NODE=$(hostname -s)
+exec /usr/bin/pvesh get "/nodes/${NODE}/storage" --output-format json

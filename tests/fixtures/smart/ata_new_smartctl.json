@@ -1,0 +1,8 @@
+{
+  "smartctl": {"version": [7, 5]},
+  "serial_number": "INV-001",
+  "smart_support": {"available": true, "enabled": true},
+  "smart_status": {"passed": true},
+  "temperature": {"current": "33"},
+  "ata_smart_attributes": {"table": [{"id": 199, "raw": {"value": 1}}]}
+}

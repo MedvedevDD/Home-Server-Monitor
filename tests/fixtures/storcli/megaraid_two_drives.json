@@ -1,0 +1,26 @@
+{
+  "Controllers": [
+    {
+      "Command Status": {"Status": "Success"},
+      "Response Data": {
+        "Controller": 0,
+        "Drive Information": [
+          {
+            "EID:Slt": "252:0",
+            "DID": 0,
+            "State": "Onln",
+            "Model": "ST1000NM0011",
+            "SN": "MR-001"
+          },
+          {
+            "EID:Slt": "252:1",
+            "DID": 3,
+            "State": "Onln",
+            "Model": "ST1000NM0011",
+            "SN": "MR-002"
+          }
+        ]
+      }
+    }
+  ]
+}

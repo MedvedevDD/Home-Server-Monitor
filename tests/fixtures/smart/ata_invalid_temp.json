@@ -1,0 +1,10 @@
+{
+  "smart_support": {"available": true},
+  "temperature": {"current": 255},
+  "ata_smart_attributes": {
+    "table": [
+      {"id": 194, "raw": {"value": 65535}},
+      {"id": 190, "raw": {"value": 0}}
+    ]
+  }
+}
