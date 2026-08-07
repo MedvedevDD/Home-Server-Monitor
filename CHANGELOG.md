@@ -1,3 +1,22 @@
+# Home Server Monitor 7.8.1
+
+First stable release.
+
+Highlights
+
+- Modular collector architecture.
+- Independent Storage, RAID, UPS and Proxmox collectors.
+- Health Engine with rule-based scoring.
+- Doctor / Verify / Benchmark CLI.
+- Five integrated Grafana dashboards.
+- Stable modular Telegraf architecture.
+- Improved Verify diagnostics.
+- Stable Proxmox dashboard including short time ranges.
+- GitHub CI improvements.
+- Fully compatible with all 7.8.1 beta releases.
+
+No database migration required.
+
 # Home Server Monitor 7.8.1-beta.3
 
 - Added `hsm verify` and `hsm verify --json` for live delivery-path validation.

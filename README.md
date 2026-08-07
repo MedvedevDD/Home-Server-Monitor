@@ -1,4 +1,4 @@
-# Home Server Monitor 7.8.1-beta.3
+# Home Server Monitor 7.8.1
 
 Home Server Monitor (HSM) collects hardware and Proxmox metrics, writes Influx Line Protocol through Telegraf, and installs a Grafana dashboard set.
 
@@ -43,14 +43,14 @@ The legacy `collector.py` remains as a compatibility entry point but is not used
 ## Install
 
 ```bash
-cd Home_Server_Monitor-7.8.1-beta.3
+cd Home_Server_Monitor-7.8.1
 sudo ./install.sh
 ```
 
 ## Update
 
 ```bash
-cd Home_Server_Monitor-7.8.1-beta.3
+cd Home_Server_Monitor-7.8.1
 sudo ./update.sh
 ```
 

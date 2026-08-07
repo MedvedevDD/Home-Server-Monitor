@@ -199,20 +199,46 @@ def measurement_freshness() -> list[dict[str, object]]:
 
 
 def recent_hsm_telegraf_errors(since: str = "24 hours ago") -> dict[str, object]:
-    """Inspect Telegraf logs for errors involving only HSM modular commands."""
+    """Inspect a bounded Telegraf journal window for HSM modular collector errors."""
     try:
-        result = run(["journalctl", "-u", "telegraf", "--since", since, "--no-pager"], timeout=15)
+        result = run(
+            [
+                "journalctl",
+                "-u",
+                "telegraf",
+                "--since",
+                since,
+                "-n",
+                "500",
+                "--no-pager",
+            ],
+            timeout=5,
+        )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"available": False, "errors": [], "detail": str(exc)}
+
     if result.returncode != 0:
-        return {"available": False, "errors": [], "detail": (result.stderr or result.stdout).strip()}
+        return {
+            "available": False,
+            "errors": [],
+            "detail": (result.stderr or result.stdout).strip(),
+        }
+
     errors = []
+
     for line in result.stdout.splitlines():
         lowered = line.lower()
+
         if "hsm-collect" not in lowered:
             continue
-        if "timed out" in lowered or "error in plugin" in lowered or "failed" in lowered:
+
+        if (
+            "timed out" in lowered
+            or "error in plugin" in lowered
+            or "failed" in lowered
+        ):
             errors.append(line.strip())
+
     return {"available": True, "errors": errors, "detail": ""}
 
 
