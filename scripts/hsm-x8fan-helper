@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+
+X8FAN=/usr/local/sbin/x8fan
+
+[ -x "$X8FAN" ] || {
+    printf 'ERROR: x8fan was not found at %s\n' "$X8FAN" >&2
+    exit 127
+}
+
+case "${1:-}" in
+    status)
+        [ "$#" -eq 1 ] || exit 2
+        exec "$X8FAN" status --json
+        ;;
+    auto)
+        [ "$#" -eq 2 ] || exit 2
+        case "$2" in
+            ''|*[!0-9]*)
+                printf 'ERROR: temperature must be an integer\n' >&2
+                exit 2
+                ;;
+        esac
+        [ "$2" -ge 1 ] && [ "$2" -le 100 ] || {
+            printf 'ERROR: temperature must be between 1 and 100 C\n' >&2
+            exit 2
+        }
+        exec "$X8FAN" auto "$2"
+        ;;
+    *)
+        printf 'Usage: %s status | auto <temperature_c>\n' "$0" >&2
+        exit 2
+        ;;
+esac

@@ -16,6 +16,8 @@ PROXMOX_HELPER="/usr/local/libexec/hsm-proxmox-storage-helper"
 PROXMOX_SUDOERS="/etc/sudoers.d/home-server-monitor-proxmox"
 HP_SMARTARRAY_HELPER="/usr/local/libexec/hsm-hp-smartarray-helper"
 HP_SMARTARRAY_SUDOERS="/etc/sudoers.d/home-server-monitor-hp-smartarray"
+COOLING_HELPER="/usr/local/libexec/hsm-x8fan-helper"
+COOLING_SUDOERS="/etc/sudoers.d/home-server-monitor-cooling"
 
 log() {
     printf '%s\n' "$1"
@@ -41,12 +43,16 @@ ensure_defaults_file() {
         return
     fi
 
-    for setting in HSM_STORAGE_HIDE_USB_FLASH HSM_STORAGE_EXCLUDE_SERIALS HSM_STORAGE_EXCLUDE_MODELS HSM_RAID_SSACLI_ENABLED HSM_SSACLI_HELPER HSM_SSACLI_USE_SUDO HSM_PROXMOX_ENABLED HSM_PROXMOX_REQUIRED HSM_PVEVERSION_BINARY HSM_PROXMOX_CPU_SAMPLE_SECONDS; do
+    for setting in HSM_STORAGE_HIDE_USB_FLASH HSM_STORAGE_EXCLUDE_SERIALS HSM_STORAGE_EXCLUDE_MODELS HSM_RAID_SSACLI_ENABLED HSM_SSACLI_HELPER HSM_SSACLI_USE_SUDO HSM_PROXMOX_ENABLED HSM_PROXMOX_REQUIRED HSM_PVEVERSION_BINARY HSM_PROXMOX_CPU_SAMPLE_SECONDS HSM_COOLING_ENABLED HSM_COOLING_REQUIRED HSM_COOLING_X8FAN_HELPER HSM_COOLING_X8FAN_USE_SUDO HSM_COOLING_INFLUX_URL HSM_COOLING_INFLUX_DATABASE HSM_COOLING_DISK_MAX_AGE_SECONDS; do
         if ! grep -q "^${setting}=" "$DEFAULTS_FILE"; then
             case "$setting" in
-                HSM_STORAGE_HIDE_USB_FLASH|HSM_RAID_SSACLI_ENABLED|HSM_SSACLI_USE_SUDO|HSM_PROXMOX_ENABLED) value=true ;;
+                HSM_STORAGE_HIDE_USB_FLASH|HSM_RAID_SSACLI_ENABLED|HSM_SSACLI_USE_SUDO|HSM_PROXMOX_ENABLED|HSM_COOLING_ENABLED|HSM_COOLING_X8FAN_USE_SUDO) value=true ;;
                 HSM_SSACLI_HELPER) value=/usr/local/libexec/hsm-hp-smartarray-helper ;;
-                HSM_PROXMOX_REQUIRED) value=false ;;
+                HSM_PROXMOX_REQUIRED|HSM_COOLING_REQUIRED) value=false ;;
+                HSM_COOLING_X8FAN_HELPER) value=/usr/local/libexec/hsm-x8fan-helper ;;
+                HSM_COOLING_INFLUX_URL) value=http://127.0.0.1:8086/query ;;
+                HSM_COOLING_INFLUX_DATABASE) value=raid ;;
+                HSM_COOLING_DISK_MAX_AGE_SECONDS) value=120 ;;
                 HSM_PVEVERSION_BINARY) value=pveversion ;;
                 HSM_PROXMOX_CPU_SAMPLE_SECONDS) value=0.10 ;;
                 *) value= ;;
@@ -165,6 +171,12 @@ install_telegraf_config() {
   interval = "30s"
   timeout = "10s"
   data_format = "influx"
+
+[[inputs.exec]]
+  commands = ["/usr/local/bin/hsm-collect cooling"]
+  interval = "10s"
+  timeout = "8s"
+  data_format = "influx"
 EOF_TELEGRAF
     chmod 0644 "$temp_file"
 
@@ -241,6 +253,17 @@ remove_legacy_telegraf_blocks() {
         done
     fi
 }
+install_cooling_helper() {
+    mkdir -p "$(dirname "$COOLING_HELPER")"
+    install -o root -g root -m 0755 "$INSTALL_DIR/scripts/hsm-x8fan-helper" "$COOLING_HELPER"
+    cat > "$COOLING_SUDOERS" <<EOF_SUDOERS
+telegraf ALL=(root) NOPASSWD: $COOLING_HELPER
+EOF_SUDOERS
+    chmod 0440 "$COOLING_SUDOERS"
+    if command -v visudo >/dev/null 2>&1; then
+        visudo -cf "$COOLING_SUDOERS" >/dev/null || fail "Invalid Cooling helper sudoers file."
+    fi
+}
 install_hp_smartarray_helper() {
     mkdir -p "$(dirname "$HP_SMARTARRAY_HELPER")"
     install -o root -g root -m 0755 "$INSTALL_DIR/scripts/hsm-hp-smartarray-helper" "$HP_SMARTARRAY_HELPER"
@@ -297,6 +320,7 @@ ln -sf "$INSTALL_DIR/hsm.py" /usr/local/bin/hsm
 ln -sf "$INSTALL_DIR/hsm_collect.py" /usr/local/bin/hsm-collect
 install_proxmox_helper
 install_hp_smartarray_helper
+install_cooling_helper
 
 ensure_defaults_file
 load_defaults
@@ -320,7 +344,7 @@ chmod 0644 "$GRAFANA_PROVISIONING_FILE"
 render_dashboards "$DATASOURCE_UID"
 
 log "Validating collector..."
-for module in storage raid ups proxmox; do
+for module in storage raid ups proxmox cooling; do
     if ! runuser -u telegraf -- /usr/local/bin/hsm-collect "$module" >"/tmp/home-server-monitor-${module}.metrics" 2>"/tmp/home-server-monitor-${module}.log"; then
         cat "/tmp/home-server-monitor-${module}.log" >&2 || true
         fail "Collector validation failed for module: $module"
@@ -344,7 +368,7 @@ Installation complete.
 Grafana folder: Home Server Monitor
 Dashboards: Home, Storage, RAID, UPS
 Datasource UID: $DATASOURCE_UID
-Collectors: /usr/local/bin/hsm-collect storage|raid|ups|proxmox
+Collectors: /usr/local/bin/hsm-collect storage|raid|ups|proxmox|cooling
 Telegraf config: $TELEGRAF_MANAGED_CONF
 
 Open Grafana and select Dashboards -> Home Server Monitor.

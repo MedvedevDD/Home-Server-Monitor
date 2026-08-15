@@ -37,6 +37,7 @@ COLLECTOR_MANIFESTS = {
     "raid": {"interval": 30, "timeout": 15, "measurements": ("raid_controller_status", "raid_array_status", "raid_drive_status")},
     "ups": {"interval": 10, "timeout": 5, "measurements": ("ups_status",)},
     "proxmox": {"interval": 30, "timeout": 10, "measurements": ("proxmox_host_info", "proxmox_host_status", "proxmox_storage")},
+    "cooling": {"interval": 10, "timeout": 8, "measurements": ("cooling_status", "cooling_fan")},
 }
 SENSITIVE_MARKERS = ("PASSWORD", "TOKEN", "SECRET", "API_KEY", "AUTH")
 
@@ -394,7 +395,7 @@ def doctor(quiet: bool = False, as_json: bool = False) -> int:
 
     config = inspect_managed_telegraf_config()
     add(bool(config["exists"]), "Managed Telegraf configuration", str(config["path"]), section="Telegraf")
-    add(not config["duplicates"], "Exactly one exec block per module", ", ".join(config["duplicates"]) if config["duplicates"] else "4 modules", section="Telegraf")
+    add(not config["duplicates"], "Exactly one exec block per module", ", ".join(config["duplicates"]) if config["duplicates"] else f"{len(COLLECTOR_MANIFESTS)} modules", section="Telegraf")
     add(not config["legacy_blocks"], "Legacy monolithic collector disabled", ", ".join(config["legacy_blocks"]), section="Telegraf")
 
     defaults = read_defaults()

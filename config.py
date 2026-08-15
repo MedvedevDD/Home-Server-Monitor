@@ -128,3 +128,24 @@ PROXMOX_ENABLED = _environment_bool("HSM_PROXMOX_ENABLED", True)
 PROXMOX_REQUIRED = _environment_bool("HSM_PROXMOX_REQUIRED", False)
 PVEVERSION_BINARY = os.environ.get("HSM_PVEVERSION_BINARY", "pveversion")
 PROXMOX_CPU_SAMPLE_SECONDS = float(os.environ.get("HSM_PROXMOX_CPU_SAMPLE_SECONDS", "0.10"))
+COOLING_ENABLED = _environment_bool("HSM_COOLING_ENABLED", True)
+COOLING_REQUIRED = _environment_bool("HSM_COOLING_REQUIRED", False)
+COOLING_X8FAN_HELPER = os.environ.get(
+    "HSM_COOLING_X8FAN_HELPER",
+    "/usr/local/libexec/hsm-x8fan-helper",
+).strip()
+COOLING_X8FAN_USE_SUDO = _environment_bool("HSM_COOLING_X8FAN_USE_SUDO", True)
+COOLING_X8FAN_TIMEOUT_SECONDS = int(
+    os.environ.get("HSM_COOLING_X8FAN_TIMEOUT_SECONDS", "5")
+)
+COOLING_INFLUX_URL = os.environ.get(
+    "HSM_COOLING_INFLUX_URL",
+    "http://127.0.0.1:8086/query",
+).strip()
+COOLING_INFLUX_DATABASE = os.environ.get("HSM_COOLING_INFLUX_DATABASE", "raid").strip()
+COOLING_INFLUX_TIMEOUT_SECONDS = int(
+    os.environ.get("HSM_COOLING_INFLUX_TIMEOUT_SECONDS", "3")
+)
+COOLING_DISK_MAX_AGE_SECONDS = int(
+    os.environ.get("HSM_COOLING_DISK_MAX_AGE_SECONDS", "120")
+)

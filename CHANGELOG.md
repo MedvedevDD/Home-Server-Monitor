@@ -1,3 +1,14 @@
+# Home Server Monitor 7.10.0-alpha.1
+
+- Added the first Cooling module backed by x8fan.
+- Cooling reads the maximum recent disk temperature from existing `storage_status` and `raid_drive_status` InfluxDB metrics.
+- When a valid disk temperature exists, HSM calls `x8fan auto <HDD_MAX_TEMP>`.
+- If disk temperature data is unavailable, HSM does not call `x8fan auto` and never substitutes a fake 0 C.
+- Added `cooling_status` metrics for mode, PWM2, CPU Tmax, System Temp, HDD Tmax, control source, and timestamps.
+- Added `cooling_fan` metrics for FAN1 through FAN8 while preserving the distinction between 0 RPM and unavailable/null channels.
+- Added a narrow privileged x8fan helper that permits only `status` and validated `auto <1..100>` operations.
+- Added the Cooling collector to managed Telegraf execution at a 10 second interval.
+- Grafana Cooling dashboard and Health Engine rules are intentionally deferred until the runtime collector is validated on the server.
 # Home Server Monitor 7.9.0-alpha.2
 
 - Automated installation of the HP Smart Array read-only ssacli helper and sudoers policy.

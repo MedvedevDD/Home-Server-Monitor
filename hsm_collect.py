@@ -15,7 +15,7 @@ from core.registry import ProviderRegistry
 from metric import Metric
 
 LOGGER = logging.getLogger("home_server_monitor.hsm_collect")
-MODULES = ("storage", "raid", "ups", "proxmox")
+MODULES = ("storage", "raid", "ups", "proxmox", "cooling")
 
 
 def build_parser() -> argparse.ArgumentParser:

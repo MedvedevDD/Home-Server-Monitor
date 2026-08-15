@@ -31,6 +31,9 @@ from services.proxmox_host import ProxmoxHostCollector
 from services.proxmox_storage import ProxmoxStorageCollector
 from models.proxmox_storage import ProxmoxStorageStatus
 from models.proxmox_host import ProxmoxHostStatus
+from models.cooling import CoolingStatus
+from providers.cooling import CoolingProvider
+from services.cooling import CoolingCollector
 
 
 LOGGER = logging.getLogger("home_server_monitor.collector")
@@ -44,6 +47,8 @@ RAID_DRIVE_MEASUREMENT = "raid_drive_status"
 PROXMOX_HOST_INFO_MEASUREMENT = "proxmox_host_info"
 PROXMOX_HOST_STATUS_MEASUREMENT = "proxmox_host_status"
 PROXMOX_STORAGE_MEASUREMENT = "proxmox_storage"
+COOLING_STATUS_MEASUREMENT = "cooling_status"
+COOLING_FAN_MEASUREMENT = "cooling_fan"
 
 
 def _stable_serial(disk: Disk) -> str:
@@ -478,6 +483,51 @@ def proxmox_storage_to_metric(status: ProxmoxStorageStatus) -> Metric:
         },
     )
 
+def cooling_status_to_metric(status: CoolingStatus) -> Metric:
+    fields: dict[str, bool | int | float | str] = {
+        "hdd_input_available": status.hdd_input_available,
+        "auto_applied": status.auto_applied,
+        "bios_fan_profile": status.bios_fan_profile or "unknown",
+    }
+    optional = {
+        "pwm2_raw": status.pwm2_raw,
+        "pwm2_percent": status.pwm2_percent,
+        "cpu_max_c": status.cpu_max_c,
+        "system_temp_c": status.system_temp_c,
+        "hdd_max_c": status.hdd_max_c,
+        "hdd_input_c": status.hdd_input_c,
+        "last_change": status.last_change,
+        "last_update": status.last_update,
+    }
+    fields.update({name: value for name, value in optional.items() if value is not None})
+    return Metric(
+        measurement=COOLING_STATUS_MEASUREMENT,
+        tags={
+            "board": status.board or "unknown",
+            "controller": status.controller or "unknown",
+            "mode": status.mode or "unknown",
+            "source": status.source or "unknown",
+        },
+        fields=fields,
+    )
+
+
+def cooling_fan_metrics(status: CoolingStatus) -> list[Metric]:
+    metrics: list[Metric] = []
+    for fan_id in range(1, 9):
+        rpm = status.fans.get(str(fan_id))
+        fields: dict[str, bool | int] = {"available": rpm is not None}
+        if rpm is not None:
+            fields["rpm"] = int(rpm)
+        metrics.append(
+            Metric(
+                measurement=COOLING_FAN_MEASUREMENT,
+                tags={"fan": f"FAN{fan_id}"},
+                fields=fields,
+            )
+        )
+    return metrics
+
 def configure_logging() -> None:
     """Configure diagnostic logging on stderr."""
     logging.basicConfig(
@@ -542,6 +592,15 @@ def build_provider_registry() -> ProviderRegistry:
                 array_metric=raid_array_to_metric,
                 drive_metric=raid_drive_to_metric,
                 required=config.RAID_REQUIRED,
+            )
+        )
+    if config.COOLING_ENABLED:
+        registry.register(
+            CoolingProvider(
+                collect_status=CoolingCollector().collect,
+                status_metric=cooling_status_to_metric,
+                fan_metrics=cooling_fan_metrics,
+                required=config.COOLING_REQUIRED,
             )
         )
     return registry
