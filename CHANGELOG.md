@@ -1,5 +1,9 @@
 # Home Server Monitor 7.10.0-alpha.2
 
+- Fixed `Mode` and `Control Source` Grafana stat panels by returning string fields as table results.
+- Simplified Cooling stat cards to display values without the generic `cooling_status.last` field label.
+- Added a `Cooling` quick-navigation button to all six HSM dashboards.
+- Added `cooling_status` and `cooling_fan` freshness checks to `hsm doctor` / `hsm verify`.
 - Renamed exact Cooling timestamp fields to last_change_unix and last_update_unix so existing alpha.1 float fields do not cause InfluxDB field type conflicts during upgrade.
 - Changed managed Telegraf config validation to syntax-only TOML validation; collectors are validated sequentially later, avoiding artificial Storage/RAID contention during updates.
 - Increased the Storage collector timeout from 20s to 30s after real runtime testing showed ~18s collection time on the current disk set.

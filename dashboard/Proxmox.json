@@ -75,6 +75,18 @@
       "tooltip": "Open Proxmox",
       "type": "link",
       "url": "/d/hsm-v760-proxmox"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Cooling",
+      "tooltip": "Open Cooling",
+      "type": "link",
+      "url": "/d/hsm-v710-cooling"
     }
   ],
   "panels": [

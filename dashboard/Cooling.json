@@ -121,6 +121,18 @@
       "tooltip": "Open Proxmox",
       "type": "link",
       "url": "/d/hsm-v760-proxmox"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Cooling",
+      "tooltip": "Open Cooling",
+      "type": "link",
+      "url": "/d/hsm-v710-cooling"
     }
   ],
   "liveNow": false,
@@ -162,7 +174,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -170,10 +182,10 @@
             "type": "influxdb",
             "uid": "${DS_INFLUXDB}"
           },
-          "query": "SELECT last(\"mode_name\") FROM \"cooling_status\" WHERE $timeFilter",
+          "query": "SELECT last(\"mode_name\") AS \"Mode\" FROM \"cooling_status\" WHERE $timeFilter",
           "rawQuery": true,
           "refId": "A",
-          "resultFormat": "time_series"
+          "resultFormat": "table"
         }
       ],
       "title": "Mode",
@@ -218,7 +230,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -280,7 +292,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -342,7 +354,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -404,7 +416,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -458,7 +470,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -466,10 +478,10 @@
             "type": "influxdb",
             "uid": "${DS_INFLUXDB}"
           },
-          "query": "SELECT last(\"source_name\") FROM \"cooling_status\" WHERE $timeFilter",
+          "query": "SELECT last(\"source_name\") AS \"Source\" FROM \"cooling_status\" WHERE $timeFilter",
           "rawQuery": true,
           "refId": "A",
-          "resultFormat": "time_series"
+          "resultFormat": "table"
         }
       ],
       "title": "Control Source",

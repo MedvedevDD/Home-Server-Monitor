@@ -48,6 +48,8 @@ MEASUREMENT_FRESHNESS = {
     "ups_status": {"module": "ups", "max_age": 30},
     "proxmox_host_status": {"module": "proxmox", "max_age": 90},
     "proxmox_storage": {"module": "proxmox", "max_age": 90},
+    "cooling_status": {"module": "cooling", "max_age": 30},
+    "cooling_fan": {"module": "cooling", "max_age": 30},
 }
 
 DASHBOARD_LABELS = {
@@ -56,6 +58,7 @@ DASHBOARD_LABELS = {
     "RAID.json": "RAID",
     "UPS.json": "UPS",
     "Proxmox.json": "Proxmox",
+    "Cooling.json": "Cooling",
 }
 
 
