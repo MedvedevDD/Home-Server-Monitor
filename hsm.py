@@ -33,7 +33,7 @@ JSON_API_VERSION = "1.0"
 CORE_VERSION = "2.0"
 
 COLLECTOR_MANIFESTS = {
-    "storage": {"interval": 60, "timeout": 20, "measurements": ("storage_inventory", "storage_health", "storage_status")},
+    "storage": {"interval": 60, "timeout": 30, "measurements": ("storage_inventory", "storage_health", "storage_status")},
     "raid": {"interval": 30, "timeout": 15, "measurements": ("raid_controller_status", "raid_array_status", "raid_drive_status")},
     "ups": {"interval": 10, "timeout": 5, "measurements": ("ups_status",)},
     "proxmox": {"interval": 30, "timeout": 10, "measurements": ("proxmox_host_info", "proxmox_host_status", "proxmox_storage")},

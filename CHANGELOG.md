@@ -1,5 +1,7 @@
 # Home Server Monitor 7.10.0-alpha.2
 
+- Changed managed Telegraf config validation to syntax-only TOML validation; collectors are validated sequentially later, avoiding artificial Storage/RAID contention during updates.
+- Increased the Storage collector timeout from 20s to 30s after real runtime testing showed ~18s collection time on the current disk set.
 - Added the first Grafana Cooling dashboard.
 - Added current Mode, PWM2, CPU Tmax, System Temp, HDD Tmax, and control source panels.
 - Added temperature, PWM2, and FAN1-FAN8 RPM history.

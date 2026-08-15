@@ -151,7 +151,7 @@ install_telegraf_config() {
 [[inputs.exec]]
   commands = ["/usr/local/bin/hsm-collect storage"]
   interval = "60s"
-  timeout = "20s"
+  timeout = "30s"
   data_format = "influx"
 
 [[inputs.exec]]
@@ -180,8 +180,29 @@ install_telegraf_config() {
 EOF_TELEGRAF
     chmod 0644 "$temp_file"
 
-    if ! timeout 45s telegraf --config "$temp_file" --test --input-filter exec >/tmp/home-server-monitor-telegraf-test.metrics 2>/tmp/home-server-monitor-telegraf-test.log; then
-        cat /tmp/home-server-monitor-telegraf-test.log >&2 || true
+    # Validate TOML syntax without executing all HSM collectors concurrently.
+    # Runtime collector validation is performed sequentially later in this script.
+    if ! python3 - "$temp_file" <<'PY'
+import sys
+import tomllib
+
+path = sys.argv[1]
+try:
+    with open(path, "rb") as handle:
+        config = tomllib.load(handle)
+except (OSError, tomllib.TOMLDecodeError) as exc:
+    print(f"Invalid managed Telegraf configuration: {exc}", file=sys.stderr)
+    raise SystemExit(1)
+
+inputs = config.get("inputs", {})
+blocks = inputs.get("exec", []) if isinstance(inputs, dict) else []
+if len(blocks) != 5:
+    print(f"Expected 5 HSM exec blocks, found {len(blocks)}", file=sys.stderr)
+    raise SystemExit(1)
+
+raise SystemExit(0)
+PY
+    then
         rm -f "$temp_file"
         fail "Managed Telegraf configuration validation failed."
     fi
