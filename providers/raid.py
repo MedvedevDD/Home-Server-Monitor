@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
+import shutil
 
+import config
+from core.discovery import Capability, ProviderDiscovery
 from core.provider import Provider
 from core.result import ProviderMessage, ProviderResult
 from metric import Metric
@@ -18,7 +22,7 @@ class RaidProvider(Provider):
     name = "raid"
     version = "1"
     domain = "hardware"
-    capabilities = ("megaraid", "storcli", "controllers", "arrays", "physical-drives")
+    capabilities = ("controllers", "arrays", "physical-drives")
 
     def __init__(
         self,
@@ -34,6 +38,34 @@ class RaidProvider(Provider):
         self.drive_metric = drive_metric
         self.required = required
 
+    def discover(self) -> ProviderDiscovery:
+        storcli_available = bool(
+            config.RAID_STORCLI_ENABLED
+            and (shutil.which(config.STORCLI_BINARY) or Path(config.STORCLI_BINARY).is_file())
+        )
+        ssacli_helper = Path(config.SSACLI_HELPER)
+        ssacli_available = bool(
+            config.RAID_SSACLI_ENABLED
+            and ssacli_helper.is_file()
+            and Path("/usr/sbin/ssacli").is_file()
+        )
+        return ProviderDiscovery(
+            provider=self.name,
+            domain=self.domain,
+            capabilities=[
+                Capability("controllers"),
+                Capability("arrays"),
+                Capability("physical-drives"),
+                Capability("megaraid", available=storcli_available,
+                           detail=config.STORCLI_BINARY if storcli_available else "StorCLI unavailable"),
+                Capability("storcli", available=storcli_available,
+                           detail=config.STORCLI_BINARY if storcli_available else "StorCLI unavailable"),
+                Capability("hp-smartarray", available=ssacli_available,
+                           detail=str(ssacli_helper) if ssacli_available else "SSACLI helper unavailable"),
+                Capability("ssacli", available=ssacli_available,
+                           detail="/usr/sbin/ssacli" if ssacli_available else "ssacli unavailable"),
+            ],
+        )
     def collect(self) -> ProviderResult:
         result = ProviderResult(provider=self.name)
         try:

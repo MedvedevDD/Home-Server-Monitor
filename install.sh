@@ -14,6 +14,8 @@ GRAFANA_DB="/var/lib/grafana/grafana.db"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROXMOX_HELPER="/usr/local/libexec/hsm-proxmox-storage-helper"
 PROXMOX_SUDOERS="/etc/sudoers.d/home-server-monitor-proxmox"
+HP_SMARTARRAY_HELPER="/usr/local/libexec/hsm-hp-smartarray-helper"
+HP_SMARTARRAY_SUDOERS="/etc/sudoers.d/home-server-monitor-hp-smartarray"
 
 log() {
     printf '%s\n' "$1"
@@ -39,10 +41,11 @@ ensure_defaults_file() {
         return
     fi
 
-    for setting in HSM_STORAGE_HIDE_USB_FLASH HSM_STORAGE_EXCLUDE_SERIALS HSM_STORAGE_EXCLUDE_MODELS HSM_PROXMOX_ENABLED HSM_PROXMOX_REQUIRED HSM_PVEVERSION_BINARY HSM_PROXMOX_CPU_SAMPLE_SECONDS; do
+    for setting in HSM_STORAGE_HIDE_USB_FLASH HSM_STORAGE_EXCLUDE_SERIALS HSM_STORAGE_EXCLUDE_MODELS HSM_RAID_SSACLI_ENABLED HSM_SSACLI_HELPER HSM_SSACLI_USE_SUDO HSM_PROXMOX_ENABLED HSM_PROXMOX_REQUIRED HSM_PVEVERSION_BINARY HSM_PROXMOX_CPU_SAMPLE_SECONDS; do
         if ! grep -q "^${setting}=" "$DEFAULTS_FILE"; then
             case "$setting" in
-                HSM_STORAGE_HIDE_USB_FLASH|HSM_PROXMOX_ENABLED) value=true ;;
+                HSM_STORAGE_HIDE_USB_FLASH|HSM_RAID_SSACLI_ENABLED|HSM_SSACLI_USE_SUDO|HSM_PROXMOX_ENABLED) value=true ;;
+                HSM_SSACLI_HELPER) value=/usr/local/libexec/hsm-hp-smartarray-helper ;;
                 HSM_PROXMOX_REQUIRED) value=false ;;
                 HSM_PVEVERSION_BINARY) value=pveversion ;;
                 HSM_PROXMOX_CPU_SAMPLE_SECONDS) value=0.10 ;;
@@ -238,6 +241,17 @@ remove_legacy_telegraf_blocks() {
         done
     fi
 }
+install_hp_smartarray_helper() {
+    mkdir -p "$(dirname "$HP_SMARTARRAY_HELPER")"
+    install -o root -g root -m 0755 "$INSTALL_DIR/scripts/hsm-hp-smartarray-helper" "$HP_SMARTARRAY_HELPER"
+    cat > "$HP_SMARTARRAY_SUDOERS" <<EOF_SUDOERS
+telegraf ALL=(root) NOPASSWD: $HP_SMARTARRAY_HELPER
+EOF_SUDOERS
+    chmod 0440 "$HP_SMARTARRAY_SUDOERS"
+    if command -v visudo >/dev/null 2>&1; then
+        visudo -cf "$HP_SMARTARRAY_SUDOERS" >/dev/null || fail "Invalid HP Smart Array helper sudoers file."
+    fi
+}
 install_proxmox_helper() {
     mkdir -p "$(dirname "$PROXMOX_HELPER")"
     install -o root -g root -m 0755 "$INSTALL_DIR/scripts/hsm-proxmox-storage-helper" "$PROXMOX_HELPER"
@@ -282,6 +296,7 @@ chmod 0755 "$INSTALL_DIR/collector.py" "$INSTALL_DIR/hsm.py" "$INSTALL_DIR/hsm_c
 ln -sf "$INSTALL_DIR/hsm.py" /usr/local/bin/hsm
 ln -sf "$INSTALL_DIR/hsm_collect.py" /usr/local/bin/hsm-collect
 install_proxmox_helper
+install_hp_smartarray_helper
 
 ensure_defaults_file
 load_defaults

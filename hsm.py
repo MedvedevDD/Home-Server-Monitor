@@ -397,6 +397,35 @@ def doctor(quiet: bool = False, as_json: bool = False) -> int:
     add(not config["duplicates"], "Exactly one exec block per module", ", ".join(config["duplicates"]) if config["duplicates"] else "4 modules", section="Telegraf")
     add(not config["legacy_blocks"], "Legacy monolithic collector disabled", ", ".join(config["legacy_blocks"]), section="Telegraf")
 
+    defaults = read_defaults()
+    ssacli_enabled = defaults.get("HSM_RAID_SSACLI_ENABLED", "true").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+    ssacli_helper = Path(
+        defaults.get("HSM_SSACLI_HELPER", "/usr/local/libexec/hsm-hp-smartarray-helper")
+    )
+
+    if ssacli_enabled:
+        helper_present = ssacli_helper.is_file()
+        add(helper_present, "HP Smart Array helper", str(ssacli_helper), section="RAID")
+        ssacli_present = Path("/usr/sbin/ssacli").is_file()
+        add(ssacli_present, "HP ssacli", "/usr/sbin/ssacli", section="RAID")
+        if helper_present and ssacli_present:
+            try:
+                hp_result = run(
+                    ["sudo", "-u", "telegraf", "sudo", "-n", str(ssacli_helper)],
+                    timeout=10,
+                )
+                hp_ok = hp_result.returncode == 0 and "Smart Array" in hp_result.stdout
+                hp_detail = (
+                    "telegraf read-only access OK"
+                    if hp_ok
+                    else (hp_result.stderr or hp_result.stdout).strip()
+                )
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                hp_ok = False
+                hp_detail = str(exc)
+            add(hp_ok, "HP Smart Array access", hp_detail, section="RAID")
     for item in benchmark_collectors():
         detail = f"{item['runtime_seconds']:.3f}s, {item['metrics']} metrics, timeout {item['timeout_seconds']}s"
         if item["detail"] and item["status"] != "PASS":

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+SSACLI=/usr/sbin/ssacli
+if [ ! -x "$SSACLI" ]; then
+    printf 'ERROR: ssacli was not found at %s\n' "$SSACLI" >&2
+    exit 127
+fi
+exec "$SSACLI" ctrl all show detail

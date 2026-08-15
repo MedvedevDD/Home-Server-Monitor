@@ -6,6 +6,7 @@ Home Server Monitor (HSM) collects hardware and Proxmox metrics, writes Influx L
 
 - Storage inventory and SMART health
 - MegaRAID controller and physical-drive health
+- HP Smart Array controller health through ssacli
 - NUT UPS status
 - Proxmox host and Proxmox storage status
 - Rule-based Health Engine

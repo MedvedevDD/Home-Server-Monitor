@@ -1,3 +1,12 @@
+# Home Server Monitor 7.9.0-alpha.2
+
+- Automated installation of the HP Smart Array read-only ssacli helper and sudoers policy.
+- Added upgrade-safe HP Smart Array defaults to `/etc/default/home-server-monitor`.
+- Added `hsm doctor` checks for the helper, ssacli binary, and Telegraf read-only access.
+- Added runtime RAID capabilities `hp-smartarray` and `ssacli`.
+- Backend-specific RAID capabilities now reflect actual runtime availability.
+- Added HP Smart Array settings to the example configuration.
+- Existing MegaRAID, Storage, UPS, Proxmox, InfluxDB schema, and Grafana queries are unchanged.
 # Home Server Monitor 7.9.0-alpha.1
 
 - Added the first HP Smart Array RAID backend.
