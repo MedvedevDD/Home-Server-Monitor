@@ -4,6 +4,7 @@ import unittest
 from collector import raid_array_to_metric, raid_controller_to_metric, raid_drive_to_metric
 from services.command_runner import CommandResult
 from services.raid_collectors import StorCliRaidCollector, ThreeWareRaidCollector
+from services.hp_smartarray import HpSmartArrayRaidCollector
 
 
 class QueueRunner:
@@ -91,5 +92,35 @@ p0     OK      u0    2.0 TB  -     S1      TOSHIBA HDWD260
         self.assertEqual(drives[0].slot, "0")
 
 
+    def test_hp_smartarray_controller_only(self):
+        detail = """
+Smart Array P410 in Slot 3
+   Bus Interface: PCI
+   Slot: 3
+   Serial Number: PACCR9SZ32Z6
+   Controller Status: OK
+   Firmware Version: 6.64
+   Cache Status: Not Configured
+   Battery/Capacitor Status: OK
+"""
+        collector = HpSmartArrayRaidCollector(QueueRunner([detail]))
+        controllers, arrays, drives = collector.collect()
+
+        self.assertEqual(len(controllers), 1)
+        controller = controllers[0]
+        self.assertEqual(controller.provider, "hp-smartarray")
+        self.assertEqual(controller.controller, "slot3")
+        self.assertEqual(controller.model, "Smart Array P410")
+        self.assertEqual(controller.serial, "PACCR9SZ32Z6")
+        self.assertEqual(controller.firmware, "6.64")
+        self.assertEqual(controller.status, "Healthy")
+        self.assertEqual(controller.health_score, 100)
+        self.assertEqual(controller.cache_status, "Not Configured")
+        self.assertEqual(controller.battery_status, "OK")
+        self.assertEqual(controller.virtual_drive_count, 0)
+        self.assertEqual(controller.physical_drive_count, 0)
+        self.assertFalse(controller.jbod_mode)
+        self.assertEqual(arrays, [])
+        self.assertEqual(drives, [])
 if __name__ == "__main__":
     unittest.main()

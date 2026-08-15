@@ -12,6 +12,10 @@ import config
 from models.raid import RaidArrayStatus, RaidControllerStatus, RaidDriveStatus
 from services.command_runner import CommandNotFoundError, CommandRunner, CommandRunnerError
 from services.raid_status import normalize_status
+from services.hp_smartarray import (
+    HpSmartArrayCollectionError,
+    HpSmartArrayRaidCollector,
+)
 
 LOGGER = logging.getLogger("home_server_monitor.raid")
 
@@ -314,12 +318,14 @@ class RaidCollector:
         providers = []
         if config.RAID_STORCLI_ENABLED:
             providers.append(StorCliRaidCollector())
+        if config.RAID_SSACLI_ENABLED:
+            providers.append(HpSmartArrayRaidCollector())
         if config.RAID_TWCLI_ENABLED:
             providers.append(ThreeWareRaidCollector())
         for provider in providers:
             try:
                 controllers, arrays, drives = provider.collect()
-            except RaidCollectionError as exc:
+            except (RaidCollectionError, HpSmartArrayCollectionError) as exc:
                 LOGGER.warning("RAID provider %s skipped: %s", provider.provider, exc)
                 continue
             all_controllers.extend(controllers)

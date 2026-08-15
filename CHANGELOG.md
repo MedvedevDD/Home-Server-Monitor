@@ -1,3 +1,12 @@
+# Home Server Monitor 7.9.0-alpha.1
+
+- Added the first HP Smart Array RAID backend.
+- Added controller-only monitoring through a narrow privileged ssacli helper.
+- Added P410 model, slot, serial, firmware, controller status, cache status, and battery status collection.
+- A controller with no logical or physical drives is reported normally with zero drive counts.
+- `Cache Status: Not Configured` does not by itself change controller health.
+- Existing MegaRAID/StorCLI and 3ware backends remain unchanged.
+- Physical-drive and logical-drive parsing for HP Smart Array will be added after drives are connected.
 # Home Server Monitor 7.8.1
 
 First stable release.

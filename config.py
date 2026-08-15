@@ -112,6 +112,13 @@ UPS_BATTERY_FULL_VOLTAGE = float(
 RAID_ENABLED = _environment_bool("HSM_RAID_ENABLED", True)
 RAID_REQUIRED = _environment_bool("HSM_RAID_REQUIRED", False)
 RAID_STORCLI_ENABLED = _environment_bool("HSM_RAID_STORCLI_ENABLED", True)
+RAID_SSACLI_ENABLED = _environment_bool("HSM_RAID_SSACLI_ENABLED", True)
+SSACLI_HELPER = os.environ.get(
+    "HSM_SSACLI_HELPER",
+    "/usr/local/libexec/hsm-hp-smartarray-helper",
+).strip()
+SSACLI_USE_SUDO = _environment_bool("HSM_SSACLI_USE_SUDO", True)
+SSACLI_TIMEOUT_SECONDS = 15
 RAID_TWCLI_ENABLED = _environment_bool("HSM_RAID_TWCLI_ENABLED", True)
 TWCLI_BINARY = os.environ.get("HSM_TWCLI_BINARY", "tw_cli")
 TWCLI_USE_SUDO = _environment_bool("HSM_TWCLI_USE_SUDO", False)
