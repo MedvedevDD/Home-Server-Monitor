@@ -106,7 +106,7 @@ def replace(value):
         return value.replace("${DS_INFLUXDB}", datasource_uid)
     return value
 
-for filename in ("Home.json", "Storage.json", "RAID.json", "UPS.json", "Proxmox.json"):
+for filename in ("Home.json", "Storage.json", "RAID.json", "UPS.json", "Proxmox.json", "Cooling.json"):
     with open(os.path.join(source_dir, filename), "r", encoding="utf-8") as handle:
         dashboard = replace(json.load(handle))
     dashboard.pop("__inputs", None)

@@ -112,7 +112,7 @@ import os
 import sys
 
 source_dir, target_dir, datasource_uid = sys.argv[1:4]
-expected = ("Home.json", "Storage.json", "RAID.json", "UPS.json", "Proxmox.json")
+expected = ("Home.json", "Storage.json", "RAID.json", "UPS.json", "Proxmox.json", "Cooling.json")
 
 
 def replace(value):
@@ -366,7 +366,7 @@ cat <<EOF_DONE
 Installation complete.
 
 Grafana folder: Home Server Monitor
-Dashboards: Home, Storage, RAID, UPS
+Dashboards: Home, Storage, RAID, UPS, Proxmox, Cooling
 Datasource UID: $DATASOURCE_UID
 Collectors: /usr/local/bin/hsm-collect storage|raid|ups|proxmox|cooling
 Telegraf config: $TELEGRAF_MANAGED_CONF

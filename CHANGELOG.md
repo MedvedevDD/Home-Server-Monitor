@@ -1,3 +1,13 @@
+# Home Server Monitor 7.10.0-alpha.2
+
+- Added the first Grafana Cooling dashboard.
+- Added current Mode, PWM2, CPU Tmax, System Temp, HDD Tmax, and control source panels.
+- Added temperature, PWM2, and FAN1-FAN8 RPM history.
+- Added a current fan table that preserves unavailable fan channels separately from numeric RPM.
+- Registered Cooling as the sixth managed Grafana dashboard.
+- Added `mode_name` and `source_name` fields to `cooling_status` for direct Grafana display.
+- Fixed x8fan `last_change` and `last_update` precision by storing exact integer Unix timestamps instead of low-precision float line protocol values.
+- Health Engine rules for Cooling remain deferred until dashboard/runtime behavior is validated.
 # Home Server Monitor 7.10.0-alpha.1
 
 - Added the first Cooling module backed by x8fan.

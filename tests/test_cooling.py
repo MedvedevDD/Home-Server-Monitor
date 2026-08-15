@@ -111,5 +111,29 @@ class CoolingTests(unittest.TestCase):
         self.assertIn("auto_applied=true", line)
 
 
+    def test_status_metric_preserves_integer_timestamps(self):
+        status = CoolingStatus(
+            board="Supermicro X8DTN+-F",
+            controller="W83795ADG",
+            mode="quiet",
+            source="hdd_temperature",
+            last_change=1786830330.5974474,
+            last_update=1786834410.2498512,
+        )
+        line = cooling_status_to_metric(status).to_line_protocol()
+        self.assertIn("last_change=1786830330i", line)
+        self.assertIn("last_update=1786834410i", line)
+        self.assertNotIn("e+09", line)
+
+    def test_status_metric_exposes_mode_and_source_fields(self):
+        status = CoolingStatus(
+            board="Supermicro X8DTN+-F",
+            controller="W83795ADG",
+            mode="quiet",
+            source="hdd_temperature",
+        )
+        line = cooling_status_to_metric(status).to_line_protocol()
+        self.assertIn('mode_name="quiet"', line)
+        self.assertIn('source_name="hdd_temperature"', line)
 if __name__ == "__main__":
     unittest.main()

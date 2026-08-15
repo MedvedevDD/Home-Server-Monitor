@@ -488,6 +488,8 @@ def cooling_status_to_metric(status: CoolingStatus) -> Metric:
         "hdd_input_available": status.hdd_input_available,
         "auto_applied": status.auto_applied,
         "bios_fan_profile": status.bios_fan_profile or "unknown",
+        "mode_name": status.mode or "unknown",
+        "source_name": status.source or "unknown",
     }
     optional = {
         "pwm2_raw": status.pwm2_raw,
@@ -496,8 +498,8 @@ def cooling_status_to_metric(status: CoolingStatus) -> Metric:
         "system_temp_c": status.system_temp_c,
         "hdd_max_c": status.hdd_max_c,
         "hdd_input_c": status.hdd_input_c,
-        "last_change": status.last_change,
-        "last_update": status.last_update,
+        "last_change": int(status.last_change) if status.last_change is not None else None,
+        "last_update": int(status.last_update) if status.last_update is not None else None,
     }
     fields.update({name: value for name, value in optional.items() if value is not None})
     return Metric(
