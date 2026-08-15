@@ -121,8 +121,8 @@ class CoolingTests(unittest.TestCase):
             last_update=1786834410.2498512,
         )
         line = cooling_status_to_metric(status).to_line_protocol()
-        self.assertIn("last_change=1786830330i", line)
-        self.assertIn("last_update=1786834410i", line)
+        self.assertIn("last_change_unix=1786830330i", line)
+        self.assertIn("last_update_unix=1786834410i", line)
         self.assertNotIn("e+09", line)
 
     def test_status_metric_exposes_mode_and_source_fields(self):

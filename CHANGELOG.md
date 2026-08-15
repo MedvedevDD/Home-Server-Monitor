@@ -1,5 +1,6 @@
 # Home Server Monitor 7.10.0-alpha.2
 
+- Renamed exact Cooling timestamp fields to last_change_unix and last_update_unix so existing alpha.1 float fields do not cause InfluxDB field type conflicts during upgrade.
 - Changed managed Telegraf config validation to syntax-only TOML validation; collectors are validated sequentially later, avoiding artificial Storage/RAID contention during updates.
 - Increased the Storage collector timeout from 20s to 30s after real runtime testing showed ~18s collection time on the current disk set.
 - Added the first Grafana Cooling dashboard.
