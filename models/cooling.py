@@ -23,3 +23,12 @@ class CoolingStatus:
     hdd_input_c: float | None = None
     auto_applied: bool = False
     fans: dict[str, int | None] = field(default_factory=dict)
+    status_polled: bool = False
+    hardware_access_ok: bool = True
+    bmc_all_sensors_na: bool = False
+    health_code: int = 1
+    health_status: str = "OK"
+    last_error: str = ""
+    consecutive_errors: int = 0
+    next_retry_unix: float | None = None
+    status_sample_age_seconds: float | None = None

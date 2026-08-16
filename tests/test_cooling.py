@@ -47,6 +47,7 @@ class FakeX8Fan:
             source="auto",
             fans={"1": None, "2": 961, "3": 2304, "4": 2916,
                   "5": 1600, "6": None, "7": 1024, "8": 1089},
+            status_polled=True,
         )
 
 
@@ -174,61 +175,32 @@ class CoolingTests(unittest.TestCase):
         line = cooling_status_to_metric(status).to_line_protocol()
         self.assertIn("mode_code=1i", line)
         self.assertIn("source_code=2i", line)
-    def test_unchanged_temperature_does_not_repeat_auto_before_refresh(self):
-        x8fan = FakeX8Fan()
-        with tempfile.TemporaryDirectory() as directory:
-            state_file = Path(directory) / "cooling.json"
-            collector = CoolingCollector(
-                TemperatureSource(36.0),
-                x8fan,
-                state_file=state_file,
-                auto_refresh_seconds=300,
-            )
-            first = collector.collect()
-            second = collector.collect()
+    def test_hdd_threshold_crossing_detection(self):
+        self.assertFalse(CoolingCollector._crossed_hdd_boundary(30.0, 34.0))
+        self.assertTrue(CoolingCollector._crossed_hdd_boundary(34.0, 35.0))
+        self.assertFalse(CoolingCollector._crossed_hdd_boundary(35.0, 39.0))
+        self.assertTrue(CoolingCollector._crossed_hdd_boundary(39.0, 40.0))
+        self.assertFalse(CoolingCollector._crossed_hdd_boundary(39.0, 38.0))
+        self.assertTrue(CoolingCollector._crossed_hdd_boundary(38.0, 36.0))
 
-        self.assertTrue(first.auto_applied)
-        self.assertFalse(second.auto_applied)
-        self.assertEqual(x8fan.auto_values, [36.0])
+    def test_cpu_emergency_hysteresis(self):
+        event, emergency = CoolingCollector._cpu_transition(False, 84.0)
+        self.assertFalse(event)
+        self.assertFalse(emergency)
+        event, emergency = CoolingCollector._cpu_transition(False, 85.0)
+        self.assertTrue(event)
+        self.assertTrue(emergency)
+        event, emergency = CoolingCollector._cpu_transition(True, 82.0)
+        self.assertFalse(event)
+        self.assertTrue(emergency)
+        event, emergency = CoolingCollector._cpu_transition(True, 79.0)
+        self.assertTrue(event)
+        self.assertFalse(emergency)
 
-    def test_changed_temperature_reapplies_auto(self):
-        x8fan = FakeX8Fan()
-        source = TemperatureSource(36.0)
-        with tempfile.TemporaryDirectory() as directory:
-            state_file = Path(directory) / "cooling.json"
-            collector = CoolingCollector(
-                source,
-                x8fan,
-                state_file=state_file,
-                auto_refresh_seconds=300,
-            )
-            collector.collect()
-            source.value = 37.0
-            changed = collector.collect()
-
-        self.assertTrue(changed.auto_applied)
-        self.assertEqual(x8fan.auto_values, [36.0, 37.0])
-
-    def test_expired_control_state_forces_safety_refresh(self):
-        x8fan = FakeX8Fan()
-        with tempfile.TemporaryDirectory() as directory:
-            state_file = Path(directory) / "cooling.json"
-            state_file.write_text(
-                json.dumps({
-                    "last_temperature_c": 36,
-                    "last_auto_unix": 1,
-                }),
-                encoding="utf-8",
-            )
-            collector = CoolingCollector(
-                TemperatureSource(36.0),
-                x8fan,
-                state_file=state_file,
-                auto_refresh_seconds=300,
-            )
-            refreshed = collector.collect()
-
-        self.assertTrue(refreshed.auto_applied)
-        self.assertEqual(x8fan.auto_values, [36.0])
+    def test_backoff_schedule(self):
+        self.assertEqual(CoolingCollector._backoff_seconds(1), 60)
+        self.assertEqual(CoolingCollector._backoff_seconds(2), 300)
+        self.assertEqual(CoolingCollector._backoff_seconds(3), 900)
+        self.assertEqual(CoolingCollector._backoff_seconds(10), 900)
 if __name__ == "__main__":
     unittest.main()

@@ -332,14 +332,38 @@ PROXMOX_RULES = (
          lambda m: f"15-minute load is {_number(m, 'load15'):.2f} for {int(_number(m, 'cpu_count', 1))} CPUs", _node, 5),
 )
 
+COOLING_RULES = (
+    Rule(
+        "cooling-control-unverified",
+        ("cooling_status",),
+        Severity.WARNING,
+        lambda m: _field(m, "hardware_access_ok") is False
+        and _field(m, "bmc_all_sensors_na") is not True,
+        lambda m: "x8fan/W83795 access is unavailable; fan control cannot be verified",
+        lambda m: _tag(m, "controller") or "W83795ADG",
+        15,
+    ),
+    Rule(
+        "cooling-control-critical",
+        ("cooling_status",),
+        Severity.CRITICAL,
+        lambda m: _field(m, "hardware_access_ok") is False
+        and _field(m, "bmc_all_sensors_na") is True,
+        lambda m: "W83795 access is lost and all BMC sensors are N/A; fan control cannot be verified",
+        lambda m: _tag(m, "controller") or "W83795ADG",
+        60,
+    ),
+)
+
 RULES_BY_DOMAIN = {
     "storage": STORAGE_RULES,
     "raid": RAID_RULES,
     "ups": UPS_RULES,
     "proxmox": PROXMOX_RULES,
+    "cooling": COOLING_RULES,
 }
 
-DOMAIN_ORDER = ("storage", "raid", "ups", "proxmox")
+DOMAIN_ORDER = ("storage", "raid", "ups", "proxmox", "cooling")
 
 
 def _finding_sort_key(item: Finding) -> tuple[int, int, str, str]:

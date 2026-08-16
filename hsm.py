@@ -37,7 +37,7 @@ COLLECTOR_MANIFESTS = {
     "raid": {"interval": 30, "timeout": 15, "measurements": ("raid_controller_status", "raid_array_status", "raid_drive_status")},
     "ups": {"interval": 10, "timeout": 5, "measurements": ("ups_status",)},
     "proxmox": {"interval": 30, "timeout": 10, "measurements": ("proxmox_host_info", "proxmox_host_status", "proxmox_storage")},
-    "cooling": {"interval": 10, "timeout": 8, "measurements": ("cooling_status", "cooling_fan")},
+    "cooling": {"interval": 60, "timeout": 8, "measurements": ("cooling_status", "cooling_fan")},
 }
 SENSITIVE_MARKERS = ("PASSWORD", "TOKEN", "SECRET", "API_KEY", "AUTH")
 
@@ -48,8 +48,8 @@ MEASUREMENT_FRESHNESS = {
     "ups_status": {"module": "ups", "max_age": 30},
     "proxmox_host_status": {"module": "proxmox", "max_age": 90},
     "proxmox_storage": {"module": "proxmox", "max_age": 90},
-    "cooling_status": {"module": "cooling", "max_age": 30},
-    "cooling_fan": {"module": "cooling", "max_age": 30},
+    "cooling_status": {"module": "cooling", "max_age": 180},
+    "cooling_fan": {"module": "cooling", "max_age": 900},
 }
 
 DASHBOARD_LABELS = {
@@ -529,7 +529,7 @@ def status(as_json: bool = False) -> int:
         f"WARNING {health.warning_count} | UNKNOWN {health.unknown_count}"
     )
     print()
-    display_names = {"storage": "Storage", "raid": "RAID", "ups": "UPS", "proxmox": "Proxmox"}
+    display_names = {"storage": "Storage", "raid": "RAID", "ups": "UPS", "proxmox": "Proxmox", "cooling": "Cooling"}
     for domain in health.domains:
         name = display_names.get(domain.name, domain.name.capitalize())
         print(f"{name:<10} {domain.severity.label:<8} {domain.score:>3}/100")

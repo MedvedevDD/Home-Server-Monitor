@@ -485,16 +485,13 @@ def proxmox_storage_to_metric(status: ProxmoxStorageStatus) -> Metric:
 
 def cooling_status_to_metric(status: CoolingStatus) -> Metric:
     mode_code = {
-        "quiet": 1,
-        "low": 2,
-        "boost": 3,
+        "quiet": 1, "low": 2, "medium": 3, "high": 4,
+        "turbo": 5, "full": 6, "custom": 7,
     }.get((status.mode or "").strip().lower(), 0)
 
     source_code = {
-        "manual": 1,
-        "hdd_temperature": 2,
-        "cpu_temperature": 3,
-        "system_temperature": 4,
+        "manual": 1, "hdd_temperature": 2, "hdd_hysteresis": 3,
+        "cpu_emergency": 4, "startup": 5,
     }.get((status.source or "").strip().lower(), 0)
 
     fields: dict[str, bool | int | float | str] = {
@@ -505,7 +502,16 @@ def cooling_status_to_metric(status: CoolingStatus) -> Metric:
         "source_name": status.source or "unknown",
         "mode_code": mode_code,
         "source_code": source_code,
+        "status_polled": status.status_polled,
+        "hardware_access_ok": status.hardware_access_ok,
+        "bmc_all_sensors_na": status.bmc_all_sensors_na,
+        "health_code": status.health_code,
+        "health_status": status.health_status,
+        "consecutive_errors": status.consecutive_errors,
     }
+    if status.last_error:
+        fields["last_error"] = status.last_error
+
     optional = {
         "pwm2_raw": status.pwm2_raw,
         "pwm2_percent": status.pwm2_percent,
@@ -515,6 +521,8 @@ def cooling_status_to_metric(status: CoolingStatus) -> Metric:
         "hdd_input_c": status.hdd_input_c,
         "last_change_unix": int(status.last_change) if status.last_change is not None else None,
         "last_update_unix": int(status.last_update) if status.last_update is not None else None,
+        "next_retry_unix": int(status.next_retry_unix) if status.next_retry_unix is not None else None,
+        "status_sample_age_seconds": status.status_sample_age_seconds,
     }
     fields.update({name: value for name, value in optional.items() if value is not None})
     return Metric(
@@ -530,6 +538,8 @@ def cooling_status_to_metric(status: CoolingStatus) -> Metric:
 
 
 def cooling_fan_metrics(status: CoolingStatus) -> list[Metric]:
+    if not status.status_polled:
+        return []
     metrics: list[Metric] = []
     for fan_id in range(1, 9):
         rpm = status.fans.get(str(fan_id))

@@ -150,7 +150,11 @@
                 "0": {"text": "unknown"},
                 "1": {"text": "quiet"},
                 "2": {"text": "low"},
-                "3": {"text": "boost"}
+                "3": {"text": "medium"},
+                "4": {"text": "high"},
+                "5": {"text": "turbo"},
+                "6": {"text": "full"},
+                "7": {"text": "custom"}
               },
               "type": "value"
             }
@@ -456,8 +460,9 @@
                 "0": {"text": "unknown"},
                 "1": {"text": "manual"},
                 "2": {"text": "hdd_temperature"},
-                "3": {"text": "cpu_temperature"},
-                "4": {"text": "system_temperature"}
+                "3": {"text": "hdd_hysteresis"},
+                "4": {"text": "cpu_emergency"},
+                "5": {"text": "startup"}
               },
               "type": "value"
             }

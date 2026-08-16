@@ -153,6 +153,6 @@ COOLING_CONTROL_STATE_FILE = os.environ.get(
     "HSM_COOLING_CONTROL_STATE_FILE",
     "/var/cache/home-server-monitor/cooling-control.json",
 ).strip()
-COOLING_AUTO_REFRESH_SECONDS = int(
-    os.environ.get("HSM_COOLING_AUTO_REFRESH_SECONDS", "300")
+COOLING_STATUS_INTERVAL_SECONDS = int(
+    os.environ.get("HSM_COOLING_STATUS_INTERVAL_SECONDS", "600")
 )

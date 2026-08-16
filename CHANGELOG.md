@@ -1,3 +1,17 @@
+# Home Server Monitor 7.10.0-alpha.3
+
+- Reworked Cooling around event-driven x8fan access to minimize SMBus/W83795 traffic.
+- Cooling now runs every 60 seconds but does not touch x8fan during ordinary stable-temperature cycles.
+- `x8fan auto` is invoked only on initial synchronization, HDD hysteresis-boundary crossings, or CPU emergency transitions at 85 C / release below 80 C.
+- Removed periodic/safety `x8fan auto` writes.
+- Added a read-only x8fan status poll every 10 minutes and immediately after a control event.
+- Added retry backoff after hardware-access failures: 1 minute, 5 minutes, then 15 minutes.
+- A CPU emergency transition may bypass backoff once to attempt emergency fan escalation.
+- Added direct CPU temperature sampling from Linux `coretemp`, avoiding W83795/BMC in the 60-second decision loop.
+- Added Cooling Health Engine rules: x8fan/W83795 loss is WARNING; simultaneous W83795 loss plus all BMC sensors N/A is CRITICAL.
+- HSM never performs an automatic BMC reset.
+- Corrected Grafana mappings for real x8fan modes and sources.
+- Cooling remains optional during install/update unless `HSM_COOLING_REQUIRED=true`.
 # Home Server Monitor 7.10.0-alpha.2
 
 - Made Cooling non-fatal during install/update when `HSM_COOLING_REQUIRED=false`; temporary x8fan/BMC hardware unavailability now produces a warning instead of aborting the update.
