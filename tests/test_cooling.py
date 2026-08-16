@@ -135,5 +135,32 @@ class CoolingTests(unittest.TestCase):
         line = cooling_status_to_metric(status).to_line_protocol()
         self.assertIn('mode_name="quiet"', line)
         self.assertIn('source_name="hdd_temperature"', line)
+    def test_invalid_system_temperature_sentinel_is_ignored(self):
+        payload = json.dumps({
+            "board": "Supermicro X8DTN+-F",
+            "controller": "W83795ADG",
+            "mode": "quiet",
+            "cpu_max": 51.0,
+            "system_temp": -124.0,
+            "hdd_max": 32.0,
+            "source": "hdd_temperature",
+            "fans": {},
+        })
+        runner = QueueRunner([(payload, 0)])
+        status = X8FanClient(runner).status()
+        self.assertEqual(status.cpu_max_c, 51.0)
+        self.assertIsNone(status.system_temp_c)
+        self.assertEqual(status.hdd_max_c, 32.0)
+
+    def test_status_metric_exposes_mode_and_source_codes(self):
+        status = CoolingStatus(
+            board="Supermicro X8DTN+-F",
+            controller="W83795ADG",
+            mode="quiet",
+            source="hdd_temperature",
+        )
+        line = cooling_status_to_metric(status).to_line_protocol()
+        self.assertIn("mode_code=1i", line)
+        self.assertIn("source_code=2i", line)
 if __name__ == "__main__":
     unittest.main()

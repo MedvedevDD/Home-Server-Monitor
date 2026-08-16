@@ -1,5 +1,8 @@
 # Home Server Monitor 7.10.0-alpha.2
 
+- Fixed Grafana `Mode` and `Control Source` cards using numeric code fields with value mappings, avoiding InfluxQL string-field limitations in Stat panels.
+- Added filtering for invalid x8fan temperature sentinel values such as `-124 C`; these are now treated as unavailable rather than real temperatures.
+- Split the Cooling temperature graph into independent CPU/System/HDD queries and filtered legacy invalid System temperature points from the graph.
 - Fixed `Mode` and `Control Source` Grafana stat panels by returning string fields as table results.
 - Simplified Cooling stat cards to display values without the generic `cooling_status.last` field label.
 - Added a `Cooling` quick-navigation button to all six HSM dashboards.

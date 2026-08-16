@@ -484,12 +484,27 @@ def proxmox_storage_to_metric(status: ProxmoxStorageStatus) -> Metric:
     )
 
 def cooling_status_to_metric(status: CoolingStatus) -> Metric:
+    mode_code = {
+        "quiet": 1,
+        "low": 2,
+        "boost": 3,
+    }.get((status.mode or "").strip().lower(), 0)
+
+    source_code = {
+        "manual": 1,
+        "hdd_temperature": 2,
+        "cpu_temperature": 3,
+        "system_temperature": 4,
+    }.get((status.source or "").strip().lower(), 0)
+
     fields: dict[str, bool | int | float | str] = {
         "hdd_input_available": status.hdd_input_available,
         "auto_applied": status.auto_applied,
         "bios_fan_profile": status.bios_fan_profile or "unknown",
         "mode_name": status.mode or "unknown",
         "source_name": status.source or "unknown",
+        "mode_code": mode_code,
+        "source_code": source_code,
     }
     optional = {
         "pwm2_raw": status.pwm2_raw,

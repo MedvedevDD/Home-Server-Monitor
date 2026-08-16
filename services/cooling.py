@@ -156,6 +156,17 @@ class X8FanClient:
                 return float(value)
             return None
 
+        def temperature(name: str) -> float | None:
+            value = number(name)
+            if value is None:
+                return None
+            # Super I/O/BMC sensor glitches may briefly expose sentinel-like
+            # values such as -124 C. Do not persist these as real temperatures.
+            if value <= -100.0 or value > 150.0:
+                LOGGER.warning("Ignoring invalid x8fan %s value: %s C", name, value)
+                return None
+            return value
+
         pwm_raw = payload.get("pwm2_raw")
         return CoolingStatus(
             board=str(payload.get("board") or ""),
@@ -164,9 +175,9 @@ class X8FanClient:
             mode=str(payload.get("mode") or "unknown"),
             pwm2_raw=int(pwm_raw) if isinstance(pwm_raw, (int, float)) and not isinstance(pwm_raw, bool) else None,
             pwm2_percent=number("pwm2_percent"),
-            cpu_max_c=number("cpu_max"),
-            system_temp_c=number("system_temp"),
-            hdd_max_c=number("hdd_max"),
+            cpu_max_c=temperature("cpu_max"),
+            system_temp_c=temperature("system_temp"),
+            hdd_max_c=temperature("hdd_max"),
             source=str(payload.get("source") or "unknown"),
             last_change=number("last_change"),
             last_update=number("last_update"),
