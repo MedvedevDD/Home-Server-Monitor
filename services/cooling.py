@@ -19,11 +19,12 @@ from services.command_runner import CommandRunner, CommandRunnerError
 
 LOGGER = logging.getLogger("home_server_monitor.cooling")
 
-HDD_RISING_THRESHOLDS = (35.0, 40.0, 45.0, 50.0, 55.0)
-HDD_FALLING_THRESHOLDS = (32.0, 37.0, 42.0, 47.0, 52.0)
+HDD_RISING_THRESHOLDS = (40.0, 45.0, 50.0, 55.0, 60.0)
+HDD_FALLING_THRESHOLDS = (37.0, 42.0, 47.0, 52.0, 57.0)
 CPU_EMERGENCY = 85.0
 CPU_EMERGENCY_RELEASE = 80.0
 BACKOFF_SECONDS = (60, 300, 900)
+COOLING_POLICY_VERSION = "hdd-40-45-50-55-60-v1"
 
 
 class CoolingCollectionError(RuntimeError):
@@ -354,7 +355,8 @@ class CoolingCollector:
             hdd_temp,
         )
         cpu_event, next_emergency = self._cpu_transition(previous_emergency, cpu_temp)
-        control_event = hdd_event or cpu_event
+        policy_changed = state.get("policy_version") != COOLING_POLICY_VERSION
+        control_event = hdd_event or cpu_event or policy_changed
 
         last_status_unix = float(state.get("last_status_unix", 0.0) or 0.0)
         status_due = (now - last_status_unix) >= self.status_interval_seconds
@@ -410,6 +412,7 @@ class CoolingCollector:
             if hdd_temp is not None:
                 state["last_hdd_temp"] = float(hdd_temp)
             state["cpu_emergency"] = bool(next_emergency)
+            state["policy_version"] = COOLING_POLICY_VERSION
 
         state.update({
             "last_status_unix": last_status_unix,

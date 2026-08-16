@@ -1,3 +1,9 @@
+# Home Server Monitor 7.10.0-alpha.4
+
+- Raised HDD Cooling thresholds to 40/45/50/55/60 C with release thresholds 37/42/47/52/57 C.
+- Added a Cooling policy version so the first alpha.4 cycle re-synchronizes x8fan and releases stale low-speed states from the previous 35 C policy.
+- Fixed Storage `Warning` stat to display 0 when there are no warning disks.
+- Fixed `Current disk temperature` and `Current health score` to use only fresh storage_status samples from the last 2 minutes, preventing disks that have moved behind RAID from lingering in Storage gauges.
 # Home Server Monitor 7.10.0-alpha.3
 
 - Reworked Cooling around event-driven x8fan access to minimize SMBus/W83795 traffic.

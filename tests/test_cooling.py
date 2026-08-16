@@ -176,11 +176,11 @@ class CoolingTests(unittest.TestCase):
         self.assertIn("mode_code=1i", line)
         self.assertIn("source_code=2i", line)
     def test_hdd_threshold_crossing_detection(self):
-        self.assertFalse(CoolingCollector._crossed_hdd_boundary(30.0, 34.0))
-        self.assertTrue(CoolingCollector._crossed_hdd_boundary(34.0, 35.0))
-        self.assertFalse(CoolingCollector._crossed_hdd_boundary(35.0, 39.0))
+        self.assertFalse(CoolingCollector._crossed_hdd_boundary(30.0, 39.0))
         self.assertTrue(CoolingCollector._crossed_hdd_boundary(39.0, 40.0))
-        self.assertFalse(CoolingCollector._crossed_hdd_boundary(39.0, 38.0))
+        self.assertFalse(CoolingCollector._crossed_hdd_boundary(40.0, 44.0))
+        self.assertTrue(CoolingCollector._crossed_hdd_boundary(44.0, 45.0))
+        self.assertFalse(CoolingCollector._crossed_hdd_boundary(40.0, 39.0))
         self.assertTrue(CoolingCollector._crossed_hdd_boundary(38.0, 36.0))
 
     def test_cpu_emergency_hysteresis(self):

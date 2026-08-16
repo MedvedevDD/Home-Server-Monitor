@@ -500,6 +500,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1060,7 +1061,7 @@
             "type": "influxdb",
             "uid": "${DS_INFLUXDB}"
           },
-          "query": "SELECT last(\"temperature_c\") FROM \"storage_status\" WHERE $timeFilter AND \"host\" =~ /^$host$/ AND \"disk_type\" =~ /^$disk_type$/ GROUP BY \"display_name\"",
+          "query": "SELECT last(\"temperature_c\") FROM \"storage_status\" WHERE $timeFilter AND time > now() - 2m AND \"host\" =~ /^$host$/ AND \"disk_type\" =~ /^$disk_type$/ GROUP BY \"display_name\"",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series"
@@ -1136,7 +1137,7 @@
             "type": "influxdb",
             "uid": "${DS_INFLUXDB}"
           },
-          "query": "SELECT last(\"health_score\") FROM \"storage_status\" WHERE $timeFilter AND \"host\" =~ /^$host$/ AND \"disk_type\" =~ /^$disk_type$/ GROUP BY \"display_name\"",
+          "query": "SELECT last(\"health_score\") FROM \"storage_status\" WHERE $timeFilter AND time > now() - 2m AND \"host\" =~ /^$host$/ AND \"disk_type\" =~ /^$disk_type$/ GROUP BY \"display_name\"",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series"
