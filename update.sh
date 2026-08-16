@@ -34,7 +34,7 @@ ensure_defaults_file() {
         return
     fi
 
-    for setting in HSM_STORAGE_HIDE_USB_FLASH HSM_STORAGE_EXCLUDE_SERIALS HSM_STORAGE_EXCLUDE_MODELS HSM_RAID_SSACLI_ENABLED HSM_SSACLI_HELPER HSM_SSACLI_USE_SUDO HSM_PROXMOX_ENABLED HSM_PROXMOX_REQUIRED HSM_PVEVERSION_BINARY HSM_PROXMOX_CPU_SAMPLE_SECONDS HSM_COOLING_ENABLED HSM_COOLING_REQUIRED HSM_COOLING_X8FAN_HELPER HSM_COOLING_X8FAN_USE_SUDO HSM_COOLING_INFLUX_URL HSM_COOLING_INFLUX_DATABASE HSM_COOLING_DISK_MAX_AGE_SECONDS; do
+    for setting in HSM_STORAGE_HIDE_USB_FLASH HSM_STORAGE_EXCLUDE_SERIALS HSM_STORAGE_EXCLUDE_MODELS HSM_RAID_SSACLI_ENABLED HSM_SSACLI_HELPER HSM_SSACLI_USE_SUDO HSM_PROXMOX_ENABLED HSM_PROXMOX_REQUIRED HSM_PVEVERSION_BINARY HSM_PROXMOX_CPU_SAMPLE_SECONDS HSM_COOLING_ENABLED HSM_COOLING_REQUIRED HSM_COOLING_X8FAN_HELPER HSM_COOLING_X8FAN_USE_SUDO HSM_COOLING_INFLUX_URL HSM_COOLING_INFLUX_DATABASE HSM_COOLING_DISK_MAX_AGE_SECONDS HSM_COOLING_CONTROL_STATE_FILE HSM_COOLING_AUTO_REFRESH_SECONDS; do
         if ! grep -q "^${setting}=" "$DEFAULTS_FILE"; then
             case "$setting" in
                 HSM_STORAGE_HIDE_USB_FLASH|HSM_RAID_SSACLI_ENABLED|HSM_SSACLI_USE_SUDO|HSM_PROXMOX_ENABLED|HSM_COOLING_ENABLED|HSM_COOLING_X8FAN_USE_SUDO) value=true ;;
@@ -44,6 +44,8 @@ ensure_defaults_file() {
                 HSM_COOLING_INFLUX_URL) value=http://127.0.0.1:8086/query ;;
                 HSM_COOLING_INFLUX_DATABASE) value=raid ;;
                 HSM_COOLING_DISK_MAX_AGE_SECONDS) value=120 ;;
+                HSM_COOLING_CONTROL_STATE_FILE) value=/var/cache/home-server-monitor/cooling-control.json ;;
+                HSM_COOLING_AUTO_REFRESH_SECONDS) value=300 ;;
                 HSM_PVEVERSION_BINARY) value=pveversion ;;
                 HSM_PROXMOX_CPU_SAMPLE_SECONDS) value=0.10 ;;
                 *) value= ;;
@@ -319,7 +321,22 @@ chmod 0644 "$GRAFANA_PROVISIONING_FILE"
 render_dashboards "$DATASOURCE_UID"
 
 for module in storage raid ups proxmox cooling; do
-    if ! runuser -u telegraf -- /usr/local/bin/hsm-collect "$module" >"/tmp/home-server-monitor-${module}.metrics" 2>"/tmp/home-server-monitor-${module}.log"; then
+    collector_rc=0
+    runuser -u telegraf -- /usr/local/bin/hsm-collect "$module" >"/tmp/home-server-monitor-${module}.metrics" 2>"/tmp/home-server-monitor-${module}.log" || collector_rc=$?
+
+    if [ "$module" = "cooling" ]; then
+        case "${HSM_COOLING_REQUIRED:-false}" in
+            1|true|TRUE|yes|YES|on|ON) cooling_required=true ;;
+            *) cooling_required=false ;;
+        esac
+        if [ "$cooling_required" = false ] && { [ "$collector_rc" -ne 0 ] || [ ! -s "/tmp/home-server-monitor-${module}.metrics" ]; }; then
+            cat "/tmp/home-server-monitor-${module}.log" >&2 || true
+            printf '%s\n' "WARNING: Optional Cooling collector is currently unavailable; update will continue." >&2
+            continue
+        fi
+    fi
+
+    if [ "$collector_rc" -ne 0 ]; then
         cat "/tmp/home-server-monitor-${module}.log" >&2 || true
         fail "Collector validation failed for module: $module"
     fi

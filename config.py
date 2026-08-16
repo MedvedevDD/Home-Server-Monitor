@@ -149,3 +149,10 @@ COOLING_INFLUX_TIMEOUT_SECONDS = int(
 COOLING_DISK_MAX_AGE_SECONDS = int(
     os.environ.get("HSM_COOLING_DISK_MAX_AGE_SECONDS", "120")
 )
+COOLING_CONTROL_STATE_FILE = os.environ.get(
+    "HSM_COOLING_CONTROL_STATE_FILE",
+    "/var/cache/home-server-monitor/cooling-control.json",
+).strip()
+COOLING_AUTO_REFRESH_SECONDS = int(
+    os.environ.get("HSM_COOLING_AUTO_REFRESH_SECONDS", "300")
+)

@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import time
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 import config
@@ -192,9 +195,60 @@ class CoolingCollector:
         self,
         temperature_source: InfluxTemperatureSource | None = None,
         x8fan: X8FanClient | None = None,
+        state_file: str | Path = config.COOLING_CONTROL_STATE_FILE,
+        auto_refresh_seconds: int = config.COOLING_AUTO_REFRESH_SECONDS,
     ) -> None:
         self.temperature_source = temperature_source or InfluxTemperatureSource()
         self.x8fan = x8fan or X8FanClient()
+        self.state_file = Path(state_file)
+        self.auto_refresh_seconds = max(0, int(auto_refresh_seconds))
+
+    def _load_control_state(self) -> dict[str, int | float]:
+        try:
+            payload = json.loads(self.state_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        if not isinstance(payload, Mapping):
+            return {}
+
+        state: dict[str, int | float] = {}
+        temperature = payload.get("last_temperature_c")
+        updated = payload.get("last_auto_unix")
+        if isinstance(temperature, (int, float)) and not isinstance(temperature, bool):
+            state["last_temperature_c"] = int(temperature)
+        if isinstance(updated, (int, float)) and not isinstance(updated, bool):
+            state["last_auto_unix"] = float(updated)
+        return state
+
+    def _save_control_state(self, temperature_c: int, now: float) -> None:
+        payload = {
+            "last_temperature_c": int(temperature_c),
+            "last_auto_unix": float(now),
+        }
+        try:
+            self.state_file.parent.mkdir(parents=True, exist_ok=True)
+            temporary = self.state_file.with_suffix(self.state_file.suffix + ".tmp")
+            temporary.write_text(
+                json.dumps(payload, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, self.state_file)
+        except OSError as exc:
+            LOGGER.warning("Unable to persist Cooling control state: %s", exc)
+
+    def _should_apply_auto(self, temperature_c: float, now: float) -> bool:
+        temperature = int(round(temperature_c))
+        state = self._load_control_state()
+        previous_temperature = state.get("last_temperature_c")
+        previous_auto = state.get("last_auto_unix")
+
+        if previous_temperature is None or previous_auto is None:
+            return True
+        if int(previous_temperature) != temperature:
+            return True
+        if now < float(previous_auto):
+            return True
+        return (now - float(previous_auto)) >= self.auto_refresh_seconds
 
     def collect(self) -> CoolingStatus:
         disk_temperature: float | None = None
@@ -206,8 +260,16 @@ class CoolingCollector:
             LOGGER.warning("%s", exc)
 
         if disk_temperature is not None:
-            self.x8fan.auto(disk_temperature)
-            auto_applied = True
+            now = time.time()
+            rounded_temperature = int(round(disk_temperature))
+            if self._should_apply_auto(disk_temperature, now):
+                try:
+                    self.x8fan.auto(disk_temperature)
+                except CoolingCollectionError as exc:
+                    LOGGER.warning("x8fan auto update failed: %s", exc)
+                else:
+                    auto_applied = True
+                    self._save_control_state(rounded_temperature, now)
 
         status = self.x8fan.status()
         return CoolingStatus(

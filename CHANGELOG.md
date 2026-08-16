@@ -1,5 +1,9 @@
 # Home Server Monitor 7.10.0-alpha.2
 
+- Made Cooling non-fatal during install/update when `HSM_COOLING_REQUIRED=false`; temporary x8fan/BMC hardware unavailability now produces a warning instead of aborting the update.
+- Reduced x8fan control writes: `x8fan auto <HDD_MAX>` is now sent only when HDD Tmax changes, when no prior control state exists, or after a configurable safety refresh (default 300 seconds).
+- Added persistent Cooling control state under `/var/cache/home-server-monitor/cooling-control.json`.
+- A failed x8fan `auto` operation no longer prevents HSM from attempting a read-only `status` collection.
 - Fixed Grafana `Mode` and `Control Source` cards using numeric code fields with value mappings, avoiding InfluxQL string-field limitations in Stat panels.
 - Added filtering for invalid x8fan temperature sentinel values such as `-124 C`; these are now treated as unavailable rather than real temperatures.
 - Split the Cooling temperature graph into independent CPU/System/HDD queries and filtered legacy invalid System temperature points from the graph.

@@ -1,5 +1,7 @@
 import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from collector import cooling_fan_metrics, cooling_status_to_metric
 from models.cooling import CoolingStatus
@@ -51,7 +53,12 @@ class FakeX8Fan:
 class CoolingTests(unittest.TestCase):
     def test_temperature_is_forwarded_to_x8fan(self):
         x8fan = FakeX8Fan()
-        status = CoolingCollector(TemperatureSource(36.0), x8fan).collect()
+        with tempfile.TemporaryDirectory() as directory:
+            status = CoolingCollector(
+                TemperatureSource(36.0),
+                x8fan,
+                state_file=Path(directory) / "cooling.json",
+            ).collect()
         self.assertEqual(x8fan.auto_values, [36.0])
         self.assertTrue(status.hdd_input_available)
         self.assertTrue(status.auto_applied)
@@ -59,7 +66,12 @@ class CoolingTests(unittest.TestCase):
 
     def test_missing_temperature_does_not_call_auto(self):
         x8fan = FakeX8Fan()
-        status = CoolingCollector(TemperatureSource(None), x8fan).collect()
+        with tempfile.TemporaryDirectory() as directory:
+            status = CoolingCollector(
+                TemperatureSource(None),
+                x8fan,
+                state_file=Path(directory) / "cooling.json",
+            ).collect()
         self.assertEqual(x8fan.auto_values, [])
         self.assertFalse(status.hdd_input_available)
         self.assertFalse(status.auto_applied)
@@ -162,5 +174,61 @@ class CoolingTests(unittest.TestCase):
         line = cooling_status_to_metric(status).to_line_protocol()
         self.assertIn("mode_code=1i", line)
         self.assertIn("source_code=2i", line)
+    def test_unchanged_temperature_does_not_repeat_auto_before_refresh(self):
+        x8fan = FakeX8Fan()
+        with tempfile.TemporaryDirectory() as directory:
+            state_file = Path(directory) / "cooling.json"
+            collector = CoolingCollector(
+                TemperatureSource(36.0),
+                x8fan,
+                state_file=state_file,
+                auto_refresh_seconds=300,
+            )
+            first = collector.collect()
+            second = collector.collect()
+
+        self.assertTrue(first.auto_applied)
+        self.assertFalse(second.auto_applied)
+        self.assertEqual(x8fan.auto_values, [36.0])
+
+    def test_changed_temperature_reapplies_auto(self):
+        x8fan = FakeX8Fan()
+        source = TemperatureSource(36.0)
+        with tempfile.TemporaryDirectory() as directory:
+            state_file = Path(directory) / "cooling.json"
+            collector = CoolingCollector(
+                source,
+                x8fan,
+                state_file=state_file,
+                auto_refresh_seconds=300,
+            )
+            collector.collect()
+            source.value = 37.0
+            changed = collector.collect()
+
+        self.assertTrue(changed.auto_applied)
+        self.assertEqual(x8fan.auto_values, [36.0, 37.0])
+
+    def test_expired_control_state_forces_safety_refresh(self):
+        x8fan = FakeX8Fan()
+        with tempfile.TemporaryDirectory() as directory:
+            state_file = Path(directory) / "cooling.json"
+            state_file.write_text(
+                json.dumps({
+                    "last_temperature_c": 36,
+                    "last_auto_unix": 1,
+                }),
+                encoding="utf-8",
+            )
+            collector = CoolingCollector(
+                TemperatureSource(36.0),
+                x8fan,
+                state_file=state_file,
+                auto_refresh_seconds=300,
+            )
+            refreshed = collector.collect()
+
+        self.assertTrue(refreshed.auto_applied)
+        self.assertEqual(x8fan.auto_values, [36.0])
 if __name__ == "__main__":
     unittest.main()
