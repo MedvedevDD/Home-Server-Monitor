@@ -71,6 +71,63 @@ class RaidTests(unittest.TestCase):
         self.assertEqual(drives[0].status, "Healthy")
         self.assertEqual(drives[0].health_score, 100)
 
+    def test_storcli_direct_attached_slots_get_detail_by_controller_slot(self):
+        main_payload = {
+            "Controllers": [{
+                "Command Status": {"Controller": 0, "Status": "Success"},
+                "Response Data": {
+                    "Controller": 0,
+                    "Basics": {"Model": "LSI 9267-8i", "Serial Number": "ABC", "Status": "Optimal"},
+                    "PD LIST": [{
+                        "EID:Slt": ":1", "DID": 19, "State": "JBOD",
+                        "Size": "1.819 TB", "Model": "ST2000DM001-1ER164",
+                    }],
+                },
+            }]
+        }
+        enclosure_payload = {"Controllers": []}
+        direct_payload = {
+            "Controllers": [{
+                "Command Status": {"Controller": 0, "Status": "Success"},
+                "Response Data": {
+                    "Drive /c0/s1 - Detailed Information": {
+                        "Drive /c0/s1 State": {
+                            "Media Error Count": 0,
+                            "Other Error Count": 340,
+                            "Drive Temperature": "33C",
+                            "Predictive Failure Count": 0,
+                        },
+                        "Drive /c0/s1 Device attributes": {
+                            "SN": "S4Z04V2V",
+                            "Model Number": "ST2000DM001-1ER164",
+                        },
+                    }
+                },
+            }]
+        }
+
+        runner = QueueRunner([
+            json.dumps(main_payload),
+            json.dumps(enclosure_payload),
+            json.dumps(direct_payload),
+        ])
+        collector = StorCliRaidCollector(runner)
+        controllers, arrays, drives = collector.collect()
+
+        self.assertEqual(len(drives), 1)
+        drive = drives[0]
+        self.assertEqual(drive.drive_id, "19")
+        self.assertEqual(drive.enclosure, "")
+        self.assertEqual(drive.slot, "1")
+        self.assertEqual(drive.serial, "S4Z04V2V")
+        self.assertEqual(drive.temperature_c, 33.0)
+        self.assertEqual(drive.other_errors, 340)
+        self.assertTrue(
+            any(
+                command[-5:] == ["/c0", "/sall", "show", "all", "J"]
+                for command in runner.commands
+            )
+        )
     def test_threeware_parses_basic_rows(self):
         listing = "c0  9690SA-4I  Slots=4"
         detail = """

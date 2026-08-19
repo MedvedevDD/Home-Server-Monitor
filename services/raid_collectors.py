@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from dataclasses import replace
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -139,14 +140,156 @@ class StorCliRaidCollector:
                 index[(controller, enclosure, slot)] = current
         return index
 
+    def _os_visible_serial_map(self) -> dict[str, str]:
+        """Return serial -> /dev path for OS-visible disks."""
+        command = ["lsblk", "-J", "-d", "-o", "PATH,SERIAL"]
+        try:
+            payload = json.loads(self.runner.run(command).stdout)
+        except (CommandNotFoundError, CommandRunnerError, json.JSONDecodeError):
+            return {}
+
+        devices = payload.get("blockdevices")
+        if not isinstance(devices, Sequence) or isinstance(devices, (str, bytes)):
+            return {}
+
+        result: dict[str, str] = {}
+        for item in devices:
+            if not isinstance(item, Mapping):
+                continue
+            serial = _text(item.get("serial"))
+            path = _text(item.get("path"))
+            if serial and path:
+                result[serial] = path
+        return result
+
+    def _direct_smart_temperature(self, device: str) -> float | None:
+        """Read only SMART attributes from one OS-visible ATA disk."""
+        command = [config.SMARTCTL_BINARY, "-j", "-A", device]
+        if config.SMART_USE_SUDO:
+            command = ["sudo", *command]
+
+        try:
+            payload = json.loads(self.runner.run(command).stdout)
+        except (CommandNotFoundError, CommandRunnerError, json.JSONDecodeError):
+            return None
+
+        temperature = payload.get("temperature")
+        if isinstance(temperature, Mapping):
+            current = _as_float(temperature.get("current"))
+            if current is not None and 0 < current < 100:
+                return current
+
+        table = payload.get("ata_smart_attributes")
+        if isinstance(table, Mapping):
+            rows = table.get("table")
+            if isinstance(rows, Sequence) and not isinstance(rows, (str, bytes)):
+                for row in rows:
+                    if not isinstance(row, Mapping):
+                        continue
+                    attr_id = _as_int(row.get("id"))
+                    if attr_id not in (190, 194):
+                        continue
+                    raw = row.get("raw")
+                    if isinstance(raw, Mapping):
+                        value = _as_float(raw.get("value"))
+                        if value is not None and 0 < value < 100:
+                            return value
+        return None
+    def _fill_missing_drive_temperatures(
+        self,
+        drives: list[RaidDriveStatus],
+    ) -> list[RaidDriveStatus]:
+        """Retry per-slot StorCLI detail only when the bulk response lacks temperature."""
+        result = list(drives)
+        serial_map: dict[str, str] | None = None
+
+        for index, drive in enumerate(result):
+            if drive.temperature_c is not None or not drive.slot:
+                continue
+
+            try:
+                detail_payload = self._run(
+                    [f"/c{drive.controller}", f"/s{drive.slot}", "show", "all"]
+                )
+                detail_index = self._drive_detail_index(detail_payload)
+            except (RaidCollectionError, IndexError) as exc:
+                LOGGER.debug(
+                    "StorCLI temperature fallback unavailable for c%s/s%s: %s",
+                    drive.controller,
+                    drive.slot,
+                    exc,
+                )
+                continue
+
+            detail = detail_index.get(
+                (drive.controller, drive.enclosure, drive.slot),
+                {},
+            )
+            if not detail and drive.enclosure:
+                detail = detail_index.get(
+                    (drive.controller, "", drive.slot),
+                    {},
+                )
+
+            temperature = _as_float(
+                _first(detail, "Drive Temperature", "Temperature")
+            )
+
+            if temperature is None and drive.serial:
+                if serial_map is None:
+                    serial_map = self._os_visible_serial_map()
+                device = serial_map.get(drive.serial)
+                if device:
+                    temperature = self._direct_smart_temperature(device)
+
+            if temperature is None:
+                continue
+
+            result[index] = replace(drive, temperature_c=temperature)
+
+        return result
+
     def collect(self) -> tuple[list[RaidControllerStatus], list[RaidArrayStatus], list[RaidDriveStatus]]:
         payload = self._run(["/call", "show", "all"])
+
+        detail_index: dict[tuple[str, str, str], Mapping[str, Any]] = {}
+
         try:
             detail_payload = self._run(["/call", "/eall", "/sall", "show", "all"])
-            detail_index = self._drive_detail_index(detail_payload)
+            detail_index.update(self._drive_detail_index(detail_payload))
         except (RaidCollectionError, IndexError) as exc:
-            LOGGER.warning("StorCLI detailed drive data unavailable: %s", exc)
-            detail_index = {}
+            LOGGER.debug("StorCLI enclosure drive detail unavailable: %s", exc)
+
+        if not detail_index:
+            for response_index, item, response in self._responses(payload):
+                command_status = (
+                    item.get("Command Status")
+                    if isinstance(item.get("Command Status"), Mapping)
+                    else {}
+                )
+                command_controller = _as_int(_first(command_status, "Controller"))
+                response_controller = _as_int(_first(response, "Controller"))
+                controller_number = (
+                    command_controller
+                    if command_controller is not None
+                    else (
+                        response_controller
+                        if response_controller is not None
+                        else response_index
+                    )
+                )
+                try:
+                    direct_payload = self._run(
+                        [f"/c{controller_number}", "/sall", "show", "all"]
+                    )
+                    detail_index.update(self._drive_detail_index(direct_payload))
+                except (RaidCollectionError, IndexError) as exc:
+                    LOGGER.warning(
+                        "StorCLI direct-attached drive detail unavailable for c%s: %s",
+                        controller_number,
+                        exc,
+                    )
+
         controllers: list[RaidControllerStatus] = []
         arrays: list[RaidArrayStatus] = []
         drives: list[RaidDriveStatus] = []
@@ -199,19 +342,40 @@ class StorCliRaidCollector:
                         ))
                 if ("pd list" in key_l or "drive" in key_l) and rows:
                     for row in rows:
-                        did = _text(_first(row, "DID", "Device ID", "Device Id"))
+                        did_value = _first(row, "DID", "Device ID", "Device Id")
+                        did_int = _as_int(did_value)
+                        did = (
+                            str(did_int)
+                            if did_int is not None
+                            else _text(did_value)
+                        )
                         eid_slt = _text(_first(row, "EID:Slt", "EID:SLOT"))
                         enclosure, slot = "", ""
                         if ":" in eid_slt:
                             enclosure, slot = eid_slt.split(":", 1)
                         state = _text(_first(row, "State", "Status"))
                         st, sc, hs = normalize_status(state)
+                        detail = detail_index.get((controller_id, enclosure, slot), {})
+
                         media = _as_int(_first(row, "Media Error Count", "Med Err"))
+                        if media is None:
+                            media = _as_int(_first(detail, "Media Error Count", "Med Err"))
+
                         other = _as_int(_first(row, "Other Error Count", "Other Err"))
-                        predictive = _as_int(_first(row, "Predictive Failure Count", "Predictive Failure", "Pred Fail"))
+                        if other is None:
+                            other = _as_int(_first(detail, "Other Error Count", "Other Err"))
+
+                        predictive = _as_int(
+                            _first(row, "Predictive Failure Count", "Predictive Failure", "Pred Fail")
+                        )
+                        if predictive is None:
+                            predictive = _as_int(
+                                _first(detail, "Predictive Failure Count", "Predictive Failure", "Pred Fail")
+                            )
+
                         if any((media or 0, predictive or 0)):
                             st, sc, hs = "Warning", 2, 70
-                        detail = detail_index.get((controller_id, enclosure, slot), {})
+
                         drives.append(RaidDriveStatus(
                             provider=self.provider, controller=controller_id,
                             drive_id=did or eid_slt or "unknown", enclosure=enclosure, slot=slot,
@@ -241,6 +405,7 @@ class StorCliRaidCollector:
                 virtual_drive_count=controller_arrays, physical_drive_count=controller_drives,
                 jbod_mode=controller_arrays == 0 and controller_drives > 0,
             )
+        drives = self._fill_missing_drive_temperatures(drives)
         return controllers, arrays, drives
 
 
@@ -258,6 +423,115 @@ class ThreeWareRaidCollector:
             return self.runner.run(command).stdout
         except (CommandNotFoundError, CommandRunnerError) as exc:
             raise RaidCollectionError(str(exc)) from exc
+
+    def _os_visible_serial_map(self) -> dict[str, str]:
+        """Return serial -> /dev path for OS-visible disks."""
+        command = ["lsblk", "-J", "-d", "-o", "PATH,SERIAL"]
+        try:
+            payload = json.loads(self.runner.run(command).stdout)
+        except (CommandNotFoundError, CommandRunnerError, json.JSONDecodeError):
+            return {}
+
+        devices = payload.get("blockdevices")
+        if not isinstance(devices, Sequence) or isinstance(devices, (str, bytes)):
+            return {}
+
+        result: dict[str, str] = {}
+        for item in devices:
+            if not isinstance(item, Mapping):
+                continue
+            serial = _text(item.get("serial"))
+            path = _text(item.get("path"))
+            if serial and path:
+                result[serial] = path
+        return result
+
+    def _direct_smart_temperature(self, device: str) -> float | None:
+        """Read only SMART attributes from one OS-visible ATA disk."""
+        command = [config.SMARTCTL_BINARY, "-j", "-A", device]
+        if config.SMART_USE_SUDO:
+            command = ["sudo", *command]
+
+        try:
+            payload = json.loads(self.runner.run(command).stdout)
+        except (CommandNotFoundError, CommandRunnerError, json.JSONDecodeError):
+            return None
+
+        temperature = payload.get("temperature")
+        if isinstance(temperature, Mapping):
+            current = _as_float(temperature.get("current"))
+            if current is not None and 0 < current < 100:
+                return current
+
+        table = payload.get("ata_smart_attributes")
+        if isinstance(table, Mapping):
+            rows = table.get("table")
+            if isinstance(rows, Sequence) and not isinstance(rows, (str, bytes)):
+                for row in rows:
+                    if not isinstance(row, Mapping):
+                        continue
+                    attr_id = _as_int(row.get("id"))
+                    if attr_id not in (190, 194):
+                        continue
+                    raw = row.get("raw")
+                    if isinstance(raw, Mapping):
+                        value = _as_float(raw.get("value"))
+                        if value is not None and 0 < value < 100:
+                            return value
+        return None
+    def _fill_missing_drive_temperatures(
+        self,
+        drives: list[RaidDriveStatus],
+    ) -> list[RaidDriveStatus]:
+        """Retry per-slot StorCLI detail only when the bulk response lacks temperature."""
+        result = list(drives)
+        serial_map: dict[str, str] | None = None
+
+        for index, drive in enumerate(result):
+            if drive.temperature_c is not None or not drive.slot:
+                continue
+
+            try:
+                detail_payload = self._run(
+                    [f"/c{drive.controller}", f"/s{drive.slot}", "show", "all"]
+                )
+                detail_index = self._drive_detail_index(detail_payload)
+            except (RaidCollectionError, IndexError) as exc:
+                LOGGER.debug(
+                    "StorCLI temperature fallback unavailable for c%s/s%s: %s",
+                    drive.controller,
+                    drive.slot,
+                    exc,
+                )
+                continue
+
+            detail = detail_index.get(
+                (drive.controller, drive.enclosure, drive.slot),
+                {},
+            )
+            if not detail and drive.enclosure:
+                detail = detail_index.get(
+                    (drive.controller, "", drive.slot),
+                    {},
+                )
+
+            temperature = _as_float(
+                _first(detail, "Drive Temperature", "Temperature")
+            )
+
+            if temperature is None and drive.serial:
+                if serial_map is None:
+                    serial_map = self._os_visible_serial_map()
+                device = serial_map.get(drive.serial)
+                if device:
+                    temperature = self._direct_smart_temperature(device)
+
+            if temperature is None:
+                continue
+
+            result[index] = replace(drive, temperature_c=temperature)
+
+        return result
 
     def collect(self) -> tuple[list[RaidControllerStatus], list[RaidArrayStatus], list[RaidDriveStatus]]:
         listing = self._run(["show"])
@@ -310,6 +584,115 @@ class ThreeWareRaidCollector:
 
 class RaidCollector:
     """Run every available RAID provider without breaking other collectors."""
+
+    def _os_visible_serial_map(self) -> dict[str, str]:
+        """Return serial -> /dev path for OS-visible disks."""
+        command = ["lsblk", "-J", "-d", "-o", "PATH,SERIAL"]
+        try:
+            payload = json.loads(self.runner.run(command).stdout)
+        except (CommandNotFoundError, CommandRunnerError, json.JSONDecodeError):
+            return {}
+
+        devices = payload.get("blockdevices")
+        if not isinstance(devices, Sequence) or isinstance(devices, (str, bytes)):
+            return {}
+
+        result: dict[str, str] = {}
+        for item in devices:
+            if not isinstance(item, Mapping):
+                continue
+            serial = _text(item.get("serial"))
+            path = _text(item.get("path"))
+            if serial and path:
+                result[serial] = path
+        return result
+
+    def _direct_smart_temperature(self, device: str) -> float | None:
+        """Read only SMART attributes from one OS-visible ATA disk."""
+        command = [config.SMARTCTL_BINARY, "-j", "-A", device]
+        if config.SMART_USE_SUDO:
+            command = ["sudo", *command]
+
+        try:
+            payload = json.loads(self.runner.run(command).stdout)
+        except (CommandNotFoundError, CommandRunnerError, json.JSONDecodeError):
+            return None
+
+        temperature = payload.get("temperature")
+        if isinstance(temperature, Mapping):
+            current = _as_float(temperature.get("current"))
+            if current is not None and 0 < current < 100:
+                return current
+
+        table = payload.get("ata_smart_attributes")
+        if isinstance(table, Mapping):
+            rows = table.get("table")
+            if isinstance(rows, Sequence) and not isinstance(rows, (str, bytes)):
+                for row in rows:
+                    if not isinstance(row, Mapping):
+                        continue
+                    attr_id = _as_int(row.get("id"))
+                    if attr_id not in (190, 194):
+                        continue
+                    raw = row.get("raw")
+                    if isinstance(raw, Mapping):
+                        value = _as_float(raw.get("value"))
+                        if value is not None and 0 < value < 100:
+                            return value
+        return None
+    def _fill_missing_drive_temperatures(
+        self,
+        drives: list[RaidDriveStatus],
+    ) -> list[RaidDriveStatus]:
+        """Retry per-slot StorCLI detail only when the bulk response lacks temperature."""
+        result = list(drives)
+        serial_map: dict[str, str] | None = None
+
+        for index, drive in enumerate(result):
+            if drive.temperature_c is not None or not drive.slot:
+                continue
+
+            try:
+                detail_payload = self._run(
+                    [f"/c{drive.controller}", f"/s{drive.slot}", "show", "all"]
+                )
+                detail_index = self._drive_detail_index(detail_payload)
+            except (RaidCollectionError, IndexError) as exc:
+                LOGGER.debug(
+                    "StorCLI temperature fallback unavailable for c%s/s%s: %s",
+                    drive.controller,
+                    drive.slot,
+                    exc,
+                )
+                continue
+
+            detail = detail_index.get(
+                (drive.controller, drive.enclosure, drive.slot),
+                {},
+            )
+            if not detail and drive.enclosure:
+                detail = detail_index.get(
+                    (drive.controller, "", drive.slot),
+                    {},
+                )
+
+            temperature = _as_float(
+                _first(detail, "Drive Temperature", "Temperature")
+            )
+
+            if temperature is None and drive.serial:
+                if serial_map is None:
+                    serial_map = self._os_visible_serial_map()
+                device = serial_map.get(drive.serial)
+                if device:
+                    temperature = self._direct_smart_temperature(device)
+
+            if temperature is None:
+                continue
+
+            result[index] = replace(drive, temperature_c=temperature)
+
+        return result
 
     def collect(self) -> tuple[list[RaidControllerStatus], list[RaidArrayStatus], list[RaidDriveStatus]]:
         all_controllers: list[RaidControllerStatus] = []

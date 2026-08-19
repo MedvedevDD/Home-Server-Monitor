@@ -1,3 +1,19 @@
+# Home Server Monitor 7.10.0-alpha.5
+
+- Storage/RAID ownership now uses physical serial identity rather than Linux /dev/sdX names or the MegaRAID control-device path, so disk add/remove/reordering and sdX renames do not change module ownership.
+
+- Storage no longer treats the legacy `HSM_MEGARAID_CONTROL_DEVICE` path as RAID-owned when MegaRAID SMART is disabled, preventing a real direct disk such as `/dev/sda` from losing SMART data.
+- When StorCLI reports `Drive Temperature = N/A`, RAID may use a temperature-only `smartctl -j -A` fallback on the matching OS-visible disk by serial; the disk still remains owned exclusively by RAID.
+
+- Storage now excludes MegaRAID-owned JBOD disks by StorCLI serial before ATA SMART collection and no longer runs `smartctl -d megaraid` from the Storage module.
+- RAID retries a per-slot StorCLI detail query only when the bulk drive detail omits temperature, preserving HDD temperature coverage for Cooling without using Storage SMART as a fallback.
+
+- Added direct-attached MegaRAID JBOD support for passive backplanes that expose `:slot` without an enclosure ID.
+- Storage MegaRAID discovery now falls back to direct-attached slots too, preventing RAID-owned JBOD disks from being SMART-polled twice as ordinary Storage disks.
+- StorCLI now falls back from `/call /eall /sall show all` to per-controller `/cX /sall show all` only when enclosure detail is unavailable.
+- Direct-attached MegaRAID drives now retain slot, DID, model, serial number and temperature in RAID metrics.
+- Media, other-error and predictive-failure counters now fall back to detailed StorCLI drive data when absent from the PD list.
+- Enclosure-backed MegaRAID behavior remains unchanged and does not gain extra StorCLI polling.
 # Home Server Monitor 7.10.0-alpha.4
 
 - Raised HDD Cooling thresholds to 40/45/50/55/60 C with release thresholds 37/42/47/52/57 C.

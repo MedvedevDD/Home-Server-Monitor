@@ -244,19 +244,15 @@ def storage_visible_disks(
 
     Physical drives behind MegaRAID are intentionally excluded from every
     ``storage_*`` measurement. They are represented exclusively by the RAID
-    measurements. StorCLI does not always expose an OS device or serial for
-    JBOD disks, so the final identity set also uses SMART results collected
-    through each controller control device.
+    measurements. Ownership is matched primarily by physical serial number,
+    so adding/removing disks or Linux renaming /dev/sdX devices does not
+    change which module owns a disk. A StorCLI-reported OS device is only a
+    secondary fallback when available.
     """
     disk_list = list(disks)
     health_list = list(health_results)
 
     controllers = list(discovery.megaraid_controllers) if discovery is not None else []
-    control_devices = {
-        controller.control_device
-        for controller in controllers
-        if controller.control_device
-    }
     raid_os_devices = {
         drive.os_device.strip()
         for controller in controllers
@@ -270,15 +266,12 @@ def storage_visible_disks(
         if drive.serial.strip()
     }
 
-    # MegaRaidProvider reports every physical drive through the controller's
-    # control device. Its SMART serial is the most reliable identity when
-    # StorCLI omits SN and OS Drive Name fields.
-    raid_serials.update(
-        health.serial.strip()
-        for health in health_list
-        if health.serial.strip()
-        and (health.device in control_devices or discovery is None)
-    )
+    # RAID ownership is intentionally based on stable physical identity.
+    # A MegaRAID control_device is only an access path for smartctl and may
+    # itself be a perfectly ordinary Storage disk. /dev/sdX names may also
+    # change after reboot or when disks are added/removed, so they are never
+    # promoted to ownership identity. StorCLI serial is authoritative; an
+    # OS-device path reported by StorCLI is used only as a fallback.
 
     return [
         disk
@@ -578,7 +571,8 @@ def build_provider_registry() -> ProviderRegistry:
             inventory_collect=StorageCollector().collect,
             discovery_service_factory=RaidDiscoveryService,
             smart_collect=lambda discovery_service, disks: SmartService(
-                discovery=discovery_service
+                discovery=discovery_service,
+                include_megaraid=False,
             ).collect(disks),
             visible_disks=storage_visible_disks,
             visible_health=storage_visible_health_results,

@@ -25,12 +25,14 @@ class SmartService:
         binary: str = SMARTCTL_BINARY,
         use_sudo: bool = SMART_USE_SUDO,
         discovery: RaidDiscoveryService | None = None,
+        include_megaraid: bool = True,
     ) -> None:
         self.runner = runner
         self.parser = parser or AtaSmartParser()
         self.binary = binary
         self.use_sudo = use_sudo
         self.discovery = discovery or RaidDiscoveryService()
+        self.include_megaraid = include_megaraid
 
     def collect(self, disks: Iterable[Disk]) -> list[DiskHealth]:
         """Run direct ATA and all mapped MegaRAID providers independently."""
@@ -39,22 +41,47 @@ class SmartService:
         direct_disks = list(discovery.direct_disks)
         controllers = list(discovery.megaraid_controllers)
 
+        if not self.include_megaraid:
+            raid_serials = {
+                drive.serial.strip()
+                for controller in controllers
+                for drive in controller.drives
+                if drive.serial.strip()
+            }
+            raid_os_devices = {
+                drive.os_device.strip()
+                for controller in controllers
+                for drive in controller.drives
+                if drive.os_device.strip()
+            }
+            direct_disks = [
+                disk
+                for disk in disk_list
+                if RaidDiscoveryService._is_direct_ata(disk)
+                and disk.device not in raid_os_devices
+                and (
+                    not disk.serial.strip()
+                    or disk.serial.strip() not in raid_serials
+                )
+            ]
+
         # Backward compatibility for injected v5.8 discovery results used by clients/tests.
         if not direct_disks and not controllers:
             direct_disks, controllers = self._legacy_paths(disk_list, discovery)
 
         megaraid_results: list[DiskHealth] = []
-        for controller in controllers:
-            megaraid_results.extend(
-                MegaRaidProvider(
-                    drives=controller.drives,
-                    control_device=controller.control_device,
-                    runner=self.runner,
-                    parser=self.parser,
-                    binary=self.binary,
-                    use_sudo=self.use_sudo,
-                ).collect(disk_list)
-            )
+        if self.include_megaraid:
+            for controller in controllers:
+                megaraid_results.extend(
+                    MegaRaidProvider(
+                        drives=controller.drives,
+                        control_device=controller.control_device,
+                        runner=self.runner,
+                        parser=self.parser,
+                        binary=self.binary,
+                        use_sudo=self.use_sudo,
+                    ).collect(disk_list)
+                )
 
         # Some StorCLI versions omit OS device names for JBOD disks. In that
         # case discovery cannot exclude /dev/sdX paths reliably. Use the

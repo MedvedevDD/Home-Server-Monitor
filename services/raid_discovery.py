@@ -75,10 +75,20 @@ class RaidDiscoveryService:
             for drive in drives
             if drive.os_device and _SD_DEVICE_PATTERN.fullmatch(drive.os_device)
         )
+        megaraid_serials = {
+            drive.serial.strip()
+            for drive in drives
+            if drive.serial.strip()
+        }
         direct_disks = tuple(
             disk
             for disk in disk_list
-            if self._is_direct_ata(disk) and disk.device not in megaraid_devices
+            if self._is_direct_ata(disk)
+            and disk.device not in megaraid_devices
+            and (
+                not disk.serial.strip()
+                or disk.serial.strip() not in megaraid_serials
+            )
         )
 
         if controllers and direct_disks:
