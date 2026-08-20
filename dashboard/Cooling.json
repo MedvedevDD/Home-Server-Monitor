@@ -1,771 +1,856 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_INFLUXDB",
-      "label": "InfluxDB",
-      "description": "InfluxDB datasource containing the raid database",
-      "type": "datasource",
-      "pluginId": "influxdb",
-      "pluginName": "InfluxDB"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "9.0.0"
-    },
-    {
-      "type": "datasource",
-      "id": "influxdb",
-      "name": "InfluxDB",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    }
-  ],
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 1,
-  "id": null,
-  "links": [
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Home",
-      "tooltip": "Open Home",
-      "type": "link",
-      "url": "/d/hsm-v730-home"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Storage",
-      "tooltip": "Open Storage",
-      "type": "link",
-      "url": "/d/hsm-v730-storage"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "RAID",
-      "tooltip": "Open RAID",
-      "type": "link",
-      "url": "/d/hsm-v730-raid"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "UPS",
-      "tooltip": "Open UPS",
-      "type": "link",
-      "url": "/d/hsm-v730-ups"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Proxmox",
-      "tooltip": "Open Proxmox",
-      "type": "link",
-      "url": "/d/hsm-v760-proxmox"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Cooling",
-      "tooltip": "Open Cooling",
-      "type": "link",
-      "url": "/d/hsm-v710-cooling"
-    }
-  ],
-  "liveNow": false,
-  "panels": [
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "options": {
-                "0": {"text": "unknown"},
-                "1": {"text": "quiet"},
-                "2": {"text": "low"},
-                "3": {"text": "medium"},
-                "4": {"text": "high"},
-                "5": {"text": "turbo"},
-                "6": {"text": "full"},
-                "7": {"text": "custom"}
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT last(\"mode_code\") AS \"Mode\" FROM \"cooling_status\" WHERE $timeFilter",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Mode",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 4,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT last(\"pwm2_percent\") FROM \"cooling_status\" WHERE $timeFilter",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "PWM2",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "celsius",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 85
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 8,
-        "y": 0
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT last(\"cpu_max_c\") FROM \"cooling_status\" WHERE $timeFilter",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "CPU Tmax",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "celsius",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 45
-              },
-              {
-                "color": "red",
-                "value": 55
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 12,
-        "y": 0
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT last(\"system_temp_c\") FROM \"cooling_status\" WHERE $timeFilter",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "System Temp",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "celsius",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 45
-              },
-              {
-                "color": "red",
-                "value": 50
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 0
-      },
-      "id": 5,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT last(\"hdd_input_c\") FROM \"cooling_status\" WHERE $timeFilter",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "HDD Tmax",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "options": {
-                "0": {"text": "unknown"},
-                "1": {"text": "manual"},
-                "2": {"text": "hdd_temperature"},
-                "3": {"text": "hdd_hysteresis"},
-                "4": {"text": "cpu_emergency"},
-                "5": {"text": "startup"}
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 0
-      },
-      "id": 6,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT last(\"source_code\") AS \"Source\" FROM \"cooling_status\" WHERE $timeFilter",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Control Source",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "celsius",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "showPoints": "never",
-            "spanNulls": true
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 16,
-        "x": 0,
-        "y": 4
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT mean(\"cpu_max_c\") AS \"CPU Tmax\" FROM \"cooling_status\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        },
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT mean(\"system_temp_c\") AS \"System\" FROM \"cooling_status\" WHERE $timeFilter AND \"system_temp_c\" > -100 GROUP BY time($__interval) fill(null)",
-          "rawQuery": true,
-          "refId": "B",
-          "resultFormat": "time_series"
-        },
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT mean(\"hdd_input_c\") AS \"HDD Tmax\" FROM \"cooling_status\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-          "rawQuery": true,
-          "refId": "C",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Cooling Temperatures",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 15,
-            "showPoints": "never",
-            "spanNulls": true
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 4
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull"],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT mean(\"pwm2_percent\") FROM \"cooling_status\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "PWM2 History",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "rpm",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "showPoints": "never",
-            "spanNulls": true
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 16,
-        "x": 0,
-        "y": 13
-      },
-      "id": 20,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT mean(\"rpm\") FROM \"cooling_fan\" WHERE $timeFilter GROUP BY time($__interval), \"fan\" fill(null)",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Fan RPM History",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "rpm"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 16,
-        "y": 13
-      },
-      "id": 21,
-      "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "displayName": "fan",
-            "desc": false
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
-          },
-          "query": "SELECT last(\"rpm\") AS \"rpm\", last(\"available\") AS \"available\" FROM \"cooling_fan\" WHERE $timeFilter GROUP BY \"fan\"",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "table"
-        }
-      ],
-      "title": "Current Fans",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true
-            }
-          }
-        }
-      ],
-      "type": "table"
-    }
-  ],
-  "refresh": "10s",
-  "schemaVersion": 38,
-  "style": "dark",
-  "tags": [
-    "home-server-monitor",
-    "cooling",
-    "x8fan"
-  ],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-6h",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "Home Server Monitor - Cooling",
-  "uid": "hsm-v710-cooling",
-  "version": 1,
-  "weekStart": ""
+    "__inputs":  [
+                     {
+                         "name":  "DS_INFLUXDB",
+                         "label":  "InfluxDB",
+                         "description":  "InfluxDB datasource containing the raid database",
+                         "type":  "datasource",
+                         "pluginId":  "influxdb",
+                         "pluginName":  "InfluxDB"
+                     }
+                 ],
+    "__requires":  [
+                       {
+                           "type":  "grafana",
+                           "id":  "grafana",
+                           "name":  "Grafana",
+                           "version":  "9.0.0"
+                       },
+                       {
+                           "type":  "datasource",
+                           "id":  "influxdb",
+                           "name":  "InfluxDB",
+                           "version":  "1.0.0"
+                       },
+                       {
+                           "type":  "panel",
+                           "id":  "stat",
+                           "name":  "Stat",
+                           "version":  ""
+                       },
+                       {
+                           "type":  "panel",
+                           "id":  "timeseries",
+                           "name":  "Time series",
+                           "version":  ""
+                       },
+                       {
+                           "type":  "panel",
+                           "id":  "table",
+                           "name":  "Table",
+                           "version":  ""
+                       }
+                   ],
+    "annotations":  {
+                        "list":  [
+                                     {
+                                         "builtIn":  1,
+                                         "datasource":  {
+                                                            "type":  "grafana",
+                                                            "uid":  "-- Grafana --"
+                                                        },
+                                         "enable":  true,
+                                         "hide":  true,
+                                         "iconColor":  "rgba(0, 211, 255, 1)",
+                                         "name":  "Annotations \u0026 Alerts",
+                                         "type":  "dashboard"
+                                     }
+                                 ]
+                    },
+    "editable":  true,
+    "fiscalYearStartMonth":  0,
+    "graphTooltip":  1,
+    "id":  null,
+    "links":  [
+                  {
+                      "asDropdown":  false,
+                      "icon":  "external link",
+                      "includeVars":  true,
+                      "keepTime":  true,
+                      "tags":  [
+
+                               ],
+                      "targetBlank":  false,
+                      "title":  "Home",
+                      "tooltip":  "Open Home",
+                      "type":  "link",
+                      "url":  "/d/hsm-v730-home"
+                  },
+                  {
+                      "asDropdown":  false,
+                      "icon":  "external link",
+                      "includeVars":  true,
+                      "keepTime":  true,
+                      "tags":  [
+
+                               ],
+                      "targetBlank":  false,
+                      "title":  "Storage",
+                      "tooltip":  "Open Storage",
+                      "type":  "link",
+                      "url":  "/d/hsm-v730-storage"
+                  },
+                  {
+                      "asDropdown":  false,
+                      "icon":  "external link",
+                      "includeVars":  true,
+                      "keepTime":  true,
+                      "tags":  [
+
+                               ],
+                      "targetBlank":  false,
+                      "title":  "RAID",
+                      "tooltip":  "Open RAID",
+                      "type":  "link",
+                      "url":  "/d/hsm-v730-raid"
+                  },
+                  {
+                      "asDropdown":  false,
+                      "icon":  "external link",
+                      "includeVars":  true,
+                      "keepTime":  true,
+                      "tags":  [
+
+                               ],
+                      "targetBlank":  false,
+                      "title":  "UPS",
+                      "tooltip":  "Open UPS",
+                      "type":  "link",
+                      "url":  "/d/hsm-v730-ups"
+                  },
+                  {
+                      "asDropdown":  false,
+                      "icon":  "external link",
+                      "includeVars":  true,
+                      "keepTime":  true,
+                      "tags":  [
+
+                               ],
+                      "targetBlank":  false,
+                      "title":  "Proxmox",
+                      "tooltip":  "Open Proxmox",
+                      "type":  "link",
+                      "url":  "/d/hsm-v760-proxmox"
+                  },
+                  {
+                      "asDropdown":  false,
+                      "icon":  "external link",
+                      "includeVars":  true,
+                      "keepTime":  true,
+                      "tags":  [
+
+                               ],
+                      "targetBlank":  false,
+                      "title":  "Cooling",
+                      "tooltip":  "Open Cooling",
+                      "type":  "link",
+                      "url":  "/d/hsm-v710-cooling"
+                  }
+              ],
+    "liveNow":  false,
+    "panels":  [
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "mappings":  [
+                                                                             {
+                                                                                 "options":  {
+                                                                                                 "0":  {
+                                                                                                           "text":  "unknown"
+                                                                                                       },
+                                                                                                 "1":  {
+                                                                                                           "text":  "quiet"
+                                                                                                       },
+                                                                                                 "2":  {
+                                                                                                           "text":  "low"
+                                                                                                       },
+                                                                                                 "3":  {
+                                                                                                           "text":  "medium"
+                                                                                                       },
+                                                                                                 "4":  {
+                                                                                                           "text":  "high"
+                                                                                                       },
+                                                                                                 "5":  {
+                                                                                                           "text":  "turbo"
+                                                                                                       },
+                                                                                                 "6":  {
+                                                                                                           "text":  "full"
+                                                                                                       },
+                                                                                                 "7":  {
+                                                                                                           "text":  "custom"
+                                                                                                       }
+                                                                                             },
+                                                                                 "type":  "value"
+                                                                             }
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  4,
+                                       "x":  0,
+                                       "y":  0
+                                   },
+                       "id":  1,
+                       "options":  {
+                                       "colorMode":  "background",
+                                       "graphMode":  "none",
+                                       "justifyMode":  "center",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "value"
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT last(\"mode_code\") AS \"Mode\" FROM \"cooling_status\" WHERE $timeFilter",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "Mode",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "percent",
+                                                            "min":  0,
+                                                            "max":  100,
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  4,
+                                       "x":  4,
+                                       "y":  0
+                                   },
+                       "id":  2,
+                       "options":  {
+                                       "colorMode":  "value",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "center",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "value"
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT last(\"pwm2_percent\") FROM \"cooling_status\" WHERE $timeFilter",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "PWM2",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "celsius",
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "orange",
+                                                                                                 "value":  70
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  85
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  4,
+                                       "x":  8,
+                                       "y":  0
+                                   },
+                       "id":  3,
+                       "options":  {
+                                       "colorMode":  "background",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "center",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "value"
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT last(\"cpu_max_c\") FROM \"cooling_status\" WHERE $timeFilter",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "CPU Tmax",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "celsius",
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "orange",
+                                                                                                 "value":  45
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  55
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  4,
+                                       "x":  12,
+                                       "y":  0
+                                   },
+                       "id":  4,
+                       "options":  {
+                                       "colorMode":  "background",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "center",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "value"
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT last(\"system_temp_c\") FROM \"cooling_status\" WHERE $timeFilter",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "System Temp",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "celsius",
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "orange",
+                                                                                                 "value":  45
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  50
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  4,
+                                       "x":  16,
+                                       "y":  0
+                                   },
+                       "id":  5,
+                       "options":  {
+                                       "colorMode":  "background",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "center",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "value"
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT last(\"hdd_input_c\") FROM \"cooling_status\" WHERE $timeFilter",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "HDD Tmax",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "mappings":  [
+                                                                             {
+                                                                                 "options":  {
+                                                                                                 "0":  {
+                                                                                                           "text":  "unknown"
+                                                                                                       },
+                                                                                                 "1":  {
+                                                                                                           "text":  "manual"
+                                                                                                       },
+                                                                                                 "2":  {
+                                                                                                           "text":  "hdd_temperature"
+                                                                                                       },
+                                                                                                 "3":  {
+                                                                                                           "text":  "hdd_hysteresis"
+                                                                                                       },
+                                                                                                 "4":  {
+                                                                                                           "text":  "cpu_emergency"
+                                                                                                       },
+                                                                                                 "5":  {
+                                                                                                           "text":  "startup"
+                                                                                                       }
+                                                                                             },
+                                                                                 "type":  "value"
+                                                                             }
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  4,
+                                       "x":  20,
+                                       "y":  0
+                                   },
+                       "id":  6,
+                       "options":  {
+                                       "colorMode":  "background",
+                                       "graphMode":  "none",
+                                       "justifyMode":  "center",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "value"
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT last(\"source_code\") AS \"Source\" FROM \"cooling_status\" WHERE $timeFilter",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "Control Source",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "celsius",
+                                                            "custom":  {
+                                                                           "drawStyle":  "line",
+                                                                           "lineInterpolation":  "linear",
+                                                                           "lineWidth":  2,
+                                                                           "fillOpacity":  10,
+                                                                           "showPoints":  "never",
+                                                                           "spanNulls":  true
+                                                                       }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  9,
+                                       "w":  16,
+                                       "x":  0,
+                                       "y":  4
+                                   },
+                       "id":  10,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+                                                                    "lastNotNull",
+                                                                    "max"
+                                                                ],
+                                                      "displayMode":  "table",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "mode":  "multi",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT mean(\"cpu_max_c\") AS \"CPU Tmax\" FROM \"cooling_status\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       },
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT mean(\"system_temp_c\") AS \"System\" FROM \"cooling_status\" WHERE $timeFilter AND \"system_temp_c\" \u003e -100 GROUP BY time($__interval) fill(null)",
+                                           "rawQuery":  true,
+                                           "refId":  "B",
+                                           "resultFormat":  "time_series"
+                                       },
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT mean(\"hdd_input_c\") AS \"HDD Tmax\" FROM \"cooling_status\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
+                                           "rawQuery":  true,
+                                           "refId":  "C",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "Cooling Temperatures",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "percent",
+                                                            "min":  0,
+                                                            "max":  100,
+                                                            "custom":  {
+                                                                           "drawStyle":  "line",
+                                                                           "lineInterpolation":  "linear",
+                                                                           "lineWidth":  2,
+                                                                           "fillOpacity":  15,
+                                                                           "showPoints":  "never",
+                                                                           "spanNulls":  true
+                                                                       }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  9,
+                                       "w":  8,
+                                       "x":  16,
+                                       "y":  4
+                                   },
+                       "id":  11,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+                                                                    "lastNotNull"
+                                                                ],
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "mode":  "single",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT mean(\"pwm2_percent\") FROM \"cooling_status\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "PWM2 History",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "rpm",
+                                                            "custom":  {
+                                                                           "drawStyle":  "line",
+                                                                           "lineInterpolation":  "linear",
+                                                                           "lineWidth":  1,
+                                                                           "fillOpacity":  0,
+                                                                           "showPoints":  "never",
+                                                                           "spanNulls":  900000
+                                                                       }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  10,
+                                       "w":  16,
+                                       "x":  0,
+                                       "y":  13
+                                   },
+                       "id":  20,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+                                                                    "lastNotNull"
+                                                                ],
+                                                      "displayMode":  "table",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "mode":  "multi",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT mean(\"rpm\") FROM \"cooling_fan\" WHERE $timeFilter GROUP BY time($__interval), \"fan\" fill(null)",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "time_series"
+                                       }
+                                   ],
+                       "title":  "Fan RPM History",
+                       "type":  "timeseries",
+                       "description":  "Real hardware samples only. Fan RPM is intentionally polled sparsely (~10 min); gaps prevent SMBus lockups."
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "influxdb",
+                                          "uid":  "${DS_INFLUXDB}"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "rpm"
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  10,
+                                       "w":  8,
+                                       "x":  16,
+                                       "y":  13
+                                   },
+                       "id":  21,
+                       "options":  {
+                                       "showHeader":  true,
+                                       "sortBy":  [
+                                                      {
+                                                          "displayName":  "fan",
+                                                          "desc":  false
+                                                      }
+                                                  ]
+                                   },
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "influxdb",
+                                                              "uid":  "${DS_INFLUXDB}"
+                                                          },
+                                           "query":  "SELECT last(\"rpm\") AS \"rpm\", last(\"available\") AS \"available\" FROM \"cooling_fan\" WHERE time \u003e now() - 15m GROUP BY \"fan\"",
+                                           "rawQuery":  true,
+                                           "refId":  "A",
+                                           "resultFormat":  "table"
+                                       }
+                                   ],
+                       "title":  "Current Fans",
+                       "transformations":  [
+                                               {
+                                                   "id":  "organize",
+                                                   "options":  {
+                                                                   "excludeByName":  {
+                                                                                         "Time":  true
+                                                                                     }
+                                                               }
+                                               }
+                                           ],
+                       "type":  "table",
+                       "description":  "Latest real fan RPM sample. Hardware polling is intentionally sparse (~10 min) to protect the X8DTN+-F SMBus."
+                   }
+               ],
+    "refresh":  "10s",
+    "schemaVersion":  38,
+    "style":  "dark",
+    "tags":  [
+                 "home-server-monitor",
+                 "cooling",
+                 "x8fan"
+             ],
+    "templating":  {
+                       "list":  [
+
+                                ]
+                   },
+    "time":  {
+                 "from":  "now-6h",
+                 "to":  "now"
+             },
+    "timepicker":  {
+
+                   },
+    "timezone":  "",
+    "title":  "Home Server Monitor - Cooling",
+    "uid":  "hsm-v710-cooling",
+    "version":  1,
+    "weekStart":  ""
 }

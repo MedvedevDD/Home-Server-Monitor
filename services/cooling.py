@@ -209,7 +209,8 @@ def cpu_max_temperature() -> float | None:
     return max(values) if values else None
 
 
-def bmc_all_sensors_na() -> bool | None:
+def bmc_sensor_health() -> tuple[bool | None, bool | None]:
+    """Return (all_sensors_na, critical_sensor_collapse)."""
     try:
         completed = subprocess.run(
             ["ipmitool", "sensor", "list"],
@@ -219,25 +220,49 @@ def bmc_all_sensors_na() -> bool | None:
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
-        return None
+        return None, None
     if completed.returncode != 0:
-        return None
+        return None, None
 
+    readings: dict[str, str] = {}
     total = 0
     available = 0
+    unavailable_tokens = {"na", "n/a", "no reading", ""}
+
     for raw in completed.stdout.splitlines():
         if "|" not in raw:
             continue
         parts = [part.strip() for part in raw.split("|")]
         if len(parts) < 2:
             continue
-        total += 1
+        name = parts[0].strip()
         reading = parts[1].strip().lower()
-        if reading not in {"na", "n/a", "no reading", ""}:
+        readings[name] = reading
+        total += 1
+        if reading not in unavailable_tokens:
             available += 1
+
     if total == 0:
-        return None
-    return available == 0
+        return None, None
+
+    def unavailable(name: str) -> bool:
+        return readings.get(name, "") in unavailable_tokens
+
+    fan_unavailable = sum(
+        1 for fan_id in range(1, 9)
+        if unavailable(f"FAN {fan_id}")
+    )
+
+    critical_sensor_collapse = (
+        unavailable("System Temp")
+        and fan_unavailable >= 6
+    )
+    return available == 0, critical_sensor_collapse
+
+
+def bmc_all_sensors_na() -> bool | None:
+    all_na, _ = bmc_sensor_health()
+    return all_na
 
 
 class CoolingCollector:
@@ -369,6 +394,7 @@ class CoolingCollector:
         status_polled = False
         hardware_access_ok = bool(state.get("hardware_access_ok", True))
         all_na = bool(state.get("bmc_all_sensors_na", False))
+        sensor_collapse = bool(state.get("bmc_critical_sensor_collapse", False))
         last_error = str(state.get("last_error") or "")
         errors = int(state.get("consecutive_errors", 0) or 0)
         cached = state.get("last_status") if isinstance(state.get("last_status"), Mapping) else {}
@@ -387,6 +413,7 @@ class CoolingCollector:
                 status_polled = True
                 hardware_access_ok = True
                 all_na = False
+                sensor_collapse = False
                 last_error = ""
                 errors = 0
                 next_retry_unix = 0.0
@@ -397,7 +424,9 @@ class CoolingCollector:
             last_error = str(exc)
             errors += 1
             hardware_access_ok = False
-            all_na = bmc_all_sensors_na() is True
+            all_na_result, collapse_result = bmc_sensor_health()
+            all_na = all_na_result is True
+            sensor_collapse = collapse_result is True
             next_retry_unix = now + self._backoff_seconds(errors)
             LOGGER.warning(
                 "Cooling hardware access failed; next retry in %ss: %s",
@@ -419,6 +448,7 @@ class CoolingCollector:
             "last_status": cached,
             "hardware_access_ok": hardware_access_ok,
             "bmc_all_sensors_na": all_na,
+            "bmc_critical_sensor_collapse": sensor_collapse,
             "last_error": last_error,
             "consecutive_errors": errors,
             "next_retry_unix": next_retry_unix,
@@ -426,7 +456,7 @@ class CoolingCollector:
         self._save_state(state)
 
         age = max(0.0, now - last_status_unix) if last_status_unix > 0 else None
-        if not hardware_access_ok and all_na:
+        if not hardware_access_ok and (all_na or sensor_collapse):
             health_code, health_status = 3, "CRITICAL"
         elif not hardware_access_ok:
             health_code, health_status = 2, "WARNING"

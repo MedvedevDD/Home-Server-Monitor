@@ -496,6 +496,13 @@ def cooling_status_to_metric(status: CoolingStatus) -> Metric:
         "mode_code": mode_code,
         "source_code": source_code,
         "status_polled": status.status_polled,
+        "status_stale": (
+            (not status.hardware_access_ok)
+            or (
+                status.status_sample_age_seconds is not None
+                and status.status_sample_age_seconds > config.COOLING_STATUS_INTERVAL_SECONDS * 2
+            )
+        ),
         "hardware_access_ok": status.hardware_access_ok,
         "bmc_all_sensors_na": status.bmc_all_sensors_na,
         "health_code": status.health_code,

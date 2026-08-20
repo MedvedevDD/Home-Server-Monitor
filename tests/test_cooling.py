@@ -1,12 +1,13 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from collector import cooling_fan_metrics, cooling_status_to_metric
 from models.cooling import CoolingStatus
 from services.command_runner import CommandResult
-from services.cooling import CoolingCollector, X8FanClient
+from services.cooling import CoolingCollector, X8FanClient, bmc_sensor_health
 
 
 class QueueRunner:
@@ -197,6 +198,24 @@ class CoolingTests(unittest.TestCase):
         self.assertTrue(event)
         self.assertFalse(emergency)
 
+
+    @patch("services.cooling.subprocess.run")
+    def test_partial_bmc_sensor_collapse_is_detected(self, run):
+        run.return_value.returncode = 0
+        run.return_value.stdout = """FAN 1 | na | RPM | na
+FAN 2 | na | RPM | na
+FAN 3 | na | RPM | na
+FAN 4 | na | RPM | na
+FAN 5 | na | RPM | na
+FAN 6 | na | RPM | na
+FAN 7 | na | RPM | na
+FAN 8 | na | RPM | na
+System Temp | na | degrees C | na
+P2-DIMM2A | 35.000 | degrees C | ok
+"""
+        all_na, collapse = bmc_sensor_health()
+        self.assertFalse(all_na)
+        self.assertTrue(collapse)
     def test_backoff_schedule(self):
         self.assertEqual(CoolingCollector._backoff_seconds(1), 60)
         self.assertEqual(CoolingCollector._backoff_seconds(2), 300)

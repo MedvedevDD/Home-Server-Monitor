@@ -1,3 +1,19 @@
+# Home Server Monitor 7.10.0-alpha.7
+
+- Detects partial X8DTN+-F SMBus/BMC sensor collapse and escalates Cooling hardware failure to CRITICAL when System Temp and the active fan channels disappear.
+- Exposes stale Cooling status while preserving sparse/event-driven hardware polling.
+- Makes Current Fans usable in short Grafana windows with a 15-minute real-sample lookback; Fan RPM history still uses only real hardware samples.
+- Improves Home readability for Proxmox Storage Attention and RAID mode.
+# Home Server Monitor 7.10.0-alpha.6
+
+- Renamed the RAID drive-count Home card so it is distinct from RAID physical health.
+- Increased the two bottom Home tables to use the remaining 1080p viewport height; additional rows continue to use in-panel scrolling.
+- Home `Proxmox Storage Health` now reflects the worst current storage state from the latest samples instead of the historical maximum over the selected Grafana time range.
+- Home `Proxmox Storage Attention` also uses fresh current samples, so a resolved storage-capacity incident clears immediately.
+- Compacted Home dashboard panel heights and row spacing for a denser 1080p layout.
+- Added a compact Cooling summary to Home: mode, control source, PWM2, CPU Tmax, System Temp, and HDD Tmax.
+- Added a Home RAID physical-drive table with current health, temperature, media errors, other errors, and predictive failures.
+- Corrected the RAID physical-health / drive-count summary labels when their query semantics were reversed.
 # Home Server Monitor 7.10.0-alpha.5
 
 - Storage/RAID ownership now uses physical serial identity rather than Linux /dev/sdX names or the MegaRAID control-device path, so disk add/remove/reordering and sdX renames do not change module ownership.
