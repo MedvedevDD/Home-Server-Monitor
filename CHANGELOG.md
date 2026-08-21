@@ -1,3 +1,12 @@
+# Home Server Monitor 7.10.0-alpha.8
+
+- Hides Grafana dashboard variable controls from the top bar on all HSM pages while keeping their saved values active internally, stabilizing the page-navigation button position.
+- Improves Home readability for Proxmox Storage Attention and RAID mode with short aliases and explicit text sizes.
+- Updates RAID unit-test fixtures for the new serial-based SMART enrichment lookup.
+- Adds direct SMART diagnostics to OS-visible MegaRAID JBOD disks using stable serial-number matching rather than /dev/sdX identity.
+- RAID physical drives now expose reallocated, pending, offline-uncorrectable and CRC counters alongside StorCLI Media/Other/Predictive counters.
+- RAID drive health follows the same SMART warning/critical rules used by direct Storage disks.
+- RAID dashboard physical-drive tables show both MegaRAID controller counters and physical-disk SMART counters.
 # Home Server Monitor 7.10.0-alpha.7
 
 - Detects partial X8DTN+-F SMBus/BMC sensor collapse and escalates Cooling hardware failure to CRITICAL when System Temp and the active fan channels disappear.

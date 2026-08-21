@@ -14,6 +14,8 @@ class QueueRunner:
 
     def run(self, command):
         self.commands.append(list(command))
+        if not self.outputs and "lsblk" in command:
+            return CommandResult('{"blockdevices":[]}', "", 0)
         return CommandResult(self.outputs.pop(0), "", 0)
 
 
@@ -179,5 +181,27 @@ Smart Array P410 in Slot 3
         self.assertFalse(controller.jbod_mode)
         self.assertEqual(arrays, [])
         self.assertEqual(drives, [])
+
+    def test_direct_smart_snapshot_fields(self):
+        payload = json.dumps({
+            "smart_status": {"passed": True},
+            "temperature": {"current": 33},
+            "ata_smart_attributes": {"table": [
+                {"id": 5, "raw": {"value": 2}},
+                {"id": 197, "raw": {"value": 0}},
+                {"id": 198, "raw": {"value": 0}},
+                {"id": 199, "raw": {"value": 204}},
+            ]},
+        })
+        runner = QueueRunner([payload])
+        collector = StorCliRaidCollector(runner)
+        data = collector._direct_smart_snapshot("/dev/sdz")
+        self.assertTrue(data["smart_available"])
+        self.assertTrue(data["smart_health_passed"])
+        self.assertEqual(data["temperature_c"], 33)
+        self.assertEqual(data["reallocated_sectors"], 2)
+        self.assertEqual(data["pending_sectors"], 0)
+        self.assertEqual(data["offline_uncorrectable"], 0)
+        self.assertEqual(data["crc_errors"], 204)
 if __name__ == "__main__":
     unittest.main()

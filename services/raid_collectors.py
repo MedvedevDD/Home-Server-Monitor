@@ -195,6 +195,95 @@ class StorCliRaidCollector:
                         if value is not None and 0 < value < 100:
                             return value
         return None
+    def _direct_smart_snapshot(self, device: str) -> dict[str, Any] | None:
+        command = [config.SMARTCTL_BINARY, "-j", "-a", device]
+        if config.SMART_USE_SUDO:
+            command = ["sudo", *command]
+        try:
+            result = self.runner.run(command)
+            payload = json.loads(result.stdout)
+        except (CommandNotFoundError, CommandRunnerError, json.JSONDecodeError):
+            return None
+        if not isinstance(payload, Mapping):
+            return None
+        snapshot: dict[str, Any] = {
+            "smart_available": True,
+            "smartctl_exit_code": int(result.return_code),
+        }
+        smart_status = payload.get("smart_status")
+        if isinstance(smart_status, Mapping):
+            passed = smart_status.get("passed")
+            if isinstance(passed, bool):
+                snapshot["smart_health_passed"] = passed
+        temperature = payload.get("temperature")
+        if isinstance(temperature, Mapping):
+            current = _as_float(temperature.get("current"))
+            if current is not None and 0 < current < 100:
+                snapshot["temperature_c"] = current
+        table = payload.get("ata_smart_attributes")
+        if isinstance(table, Mapping):
+            rows = table.get("table")
+            if isinstance(rows, Sequence) and not isinstance(rows, (str, bytes)):
+                attrs: dict[int, int] = {}
+                for row in rows:
+                    if not isinstance(row, Mapping):
+                        continue
+                    attr_id = _as_int(row.get("id"))
+                    raw = row.get("raw")
+                    raw_value = _as_int(raw.get("value")) if isinstance(raw, Mapping) else None
+                    if attr_id is not None and raw_value is not None:
+                        attrs[attr_id] = raw_value
+                snapshot["reallocated_sectors"] = attrs.get(5)
+                snapshot["pending_sectors"] = attrs.get(197)
+                snapshot["offline_uncorrectable"] = attrs.get(198)
+                snapshot["crc_errors"] = attrs.get(199)
+                if "temperature_c" not in snapshot:
+                    for attr_id in (194, 190):
+                        value = attrs.get(attr_id)
+                        if value is not None and 0 < value < 100:
+                            snapshot["temperature_c"] = float(value)
+                            break
+        return snapshot
+
+    def _enrich_drive_smart(self, drives: list[RaidDriveStatus]) -> list[RaidDriveStatus]:
+        serial_map = self._os_visible_serial_map()
+        result: list[RaidDriveStatus] = []
+        for drive in drives:
+            device = serial_map.get(drive.serial) if drive.serial else None
+            if not device:
+                result.append(drive)
+                continue
+            snapshot = self._direct_smart_snapshot(device)
+            if snapshot is None:
+                result.append(replace(drive, smart_available=False))
+                continue
+            status, status_code, health_score = drive.status, drive.status_code, drive.health_score
+            passed = snapshot.get("smart_health_passed")
+            pending = snapshot.get("pending_sectors")
+            offline = snapshot.get("offline_uncorrectable")
+            realloc = snapshot.get("reallocated_sectors")
+            smart_exit = snapshot.get("smartctl_exit_code")
+            temp = snapshot.get("temperature_c")
+            if passed is False or (pending or 0) > 0 or (offline or 0) > 0 or (temp is not None and temp >= 55):
+                status, status_code, health_score = "Critical", 3, 30
+            elif (realloc or 0) > 0 or (temp is not None and temp >= 45) or (smart_exit not in (None, 0)):
+                if status_code < 2:
+                    status, status_code, health_score = "Warning", 2, 70
+            result.append(replace(
+                drive,
+                status=status,
+                status_code=status_code,
+                health_score=health_score,
+                temperature_c=temp if temp is not None else drive.temperature_c,
+                smart_available=True,
+                smart_health_passed=passed if isinstance(passed, bool) else None,
+                smartctl_exit_code=smart_exit if isinstance(smart_exit, int) else None,
+                reallocated_sectors=snapshot.get("reallocated_sectors"),
+                pending_sectors=snapshot.get("pending_sectors"),
+                offline_uncorrectable=snapshot.get("offline_uncorrectable"),
+                crc_errors=snapshot.get("crc_errors"),
+            ))
+        return result
     def _fill_missing_drive_temperatures(
         self,
         drives: list[RaidDriveStatus],
@@ -406,6 +495,7 @@ class StorCliRaidCollector:
                 jbod_mode=controller_arrays == 0 and controller_drives > 0,
             )
         drives = self._fill_missing_drive_temperatures(drives)
+        drives = self._enrich_drive_smart(drives)
         return controllers, arrays, drives
 
 

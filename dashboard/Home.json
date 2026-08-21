@@ -296,7 +296,11 @@
                                                              "fields":  "",
                                                              "values":  false
                                                          },
-                                       "textMode":  "value"
+                                       "textMode":  "value_and_name",
+                                       "text":  {
+                                                    "titleSize":  14,
+                                                    "valueSize":  18
+                                                }
                                    },
                        "targets":  [
                                        {
@@ -307,7 +311,8 @@
                                            "query":  "SELECT last(\"used_percent\") FROM \"proxmox_storage\" WHERE time \u003e now() - 2m GROUP BY \"storage\"",
                                            "rawQuery":  true,
                                            "refId":  "A",
-                                           "resultFormat":  "time_series"
+                                           "resultFormat":  "time_series",
+                                           "alias":  "$tag_storage"
                                        }
                                    ],
                        "title":  "Proxmox Storage Attention",
@@ -1069,7 +1074,11 @@
                                                              "values":  false
                                                          },
                                        "textMode":  "value",
-                                       "wideLayout":  true
+                                       "wideLayout":  true,
+                                       "text":  {
+                                                    "titleSize":  14,
+                                                    "valueSize":  20
+                                                }
                                    },
                        "targets":  [
                                        {
@@ -2233,7 +2242,6 @@
                                                            "uid":  "${DS_INFLUXDB}"
                                                        },
                                         "definition":  "SHOW TAG VALUES FROM \"storage_status\" WITH KEY = \"host\"",
-                                        "hide":  0,
                                         "includeAll":  true,
                                         "label":  "Host",
                                         "multi":  true,
@@ -2246,7 +2254,8 @@
                                         "regex":  "",
                                         "skipUrlSync":  false,
                                         "sort":  1,
-                                        "type":  "query"
+                                        "type":  "query",
+                                        "hide":  2
                                     },
                                     {
                                         "current":  {
@@ -2259,7 +2268,6 @@
                                                            "uid":  "${DS_INFLUXDB}"
                                                        },
                                         "definition":  "SHOW TAG VALUES FROM \"storage_status\" WITH KEY = \"disk_type\"",
-                                        "hide":  0,
                                         "includeAll":  true,
                                         "label":  "Disk type",
                                         "multi":  true,
@@ -2272,7 +2280,8 @@
                                         "regex":  "",
                                         "skipUrlSync":  false,
                                         "sort":  1,
-                                        "type":  "query"
+                                        "type":  "query",
+                                        "hide":  2
                                     },
                                     {
                                         "current":  {
@@ -2285,7 +2294,6 @@
                                                            "uid":  "${DS_INFLUXDB}"
                                                        },
                                         "definition":  "SHOW TAG VALUES FROM \"ups_status\" WITH KEY = \"ups_name\"",
-                                        "hide":  0,
                                         "includeAll":  true,
                                         "label":  "UPS",
                                         "multi":  true,
@@ -2298,7 +2306,8 @@
                                         "regex":  "",
                                         "skipUrlSync":  false,
                                         "sort":  1,
-                                        "type":  "query"
+                                        "type":  "query",
+                                        "hide":  2
                                     },
                                     {
                                         "current":  {
@@ -2311,7 +2320,6 @@
                                                            "uid":  "${DS_INFLUXDB}"
                                                        },
                                         "definition":  "SHOW TAG VALUES FROM \"raid_controller_status\" WITH KEY = \"controller\"",
-                                        "hide":  0,
                                         "includeAll":  true,
                                         "label":  "RAID controller",
                                         "multi":  true,
@@ -2324,7 +2332,8 @@
                                         "regex":  "",
                                         "skipUrlSync":  false,
                                         "sort":  1,
-                                        "type":  "query"
+                                        "type":  "query",
+                                        "hide":  2
                                     }
                                 ]
                    },

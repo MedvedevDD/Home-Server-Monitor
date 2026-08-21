@@ -57,3 +57,10 @@ class RaidDriveStatus:
     other_errors: int | None = None
     predictive_failures: int | None = None
     temperature_c: float | None = None
+    smart_available: bool | None = None
+    smart_health_passed: bool | None = None
+    smartctl_exit_code: int | None = None
+    reallocated_sectors: int | None = None
+    pending_sectors: int | None = None
+    offline_uncorrectable: int | None = None
+    crc_errors: int | None = None

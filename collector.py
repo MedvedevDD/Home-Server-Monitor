@@ -405,6 +405,13 @@ def raid_drive_to_metric(item: RaidDriveStatus) -> Metric:
         "other_errors": item.other_errors,
         "predictive_failures": item.predictive_failures,
         "temperature_c": item.temperature_c,
+        "smart_available": item.smart_available,
+        "smart_health_passed": item.smart_health_passed,
+        "smartctl_exit_code": item.smartctl_exit_code,
+        "reallocated_sectors": item.reallocated_sectors,
+        "pending_sectors": item.pending_sectors,
+        "offline_uncorrectable": item.offline_uncorrectable,
+        "crc_errors": item.crc_errors,
     }
     fields.update({k: v for k, v in optional.items() if v is not None})
     return Metric(
